@@ -1,0 +1,36 @@
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/preflight.css" layer(base);
+@import "tailwindcss/utilities.css";
+
+@import "nativewind/theme";
+
+@theme {
+  --color-text: #0e0104;
+  --color-background: #fdedf0;
+  --color-primary: #e61e3f;
+  --color-secondary: #f1b883;
+  --color-accent: #edcc5e;
+  --color-pill: #f0f0f0;
+
+  --color-text-dark: #fef1f4;
+  --color-background-dark: #120205;
+  --color-primary-dark: #e1193a;
+  --color-secondary-dark: #7c430e;
+  --color-accent-dark: #a17f12;
+  --color-pill-dark: #050404;
+  
+  --font-fredoka: "Fredoka-Regular";
+  --font-fredoka-light: "Fredoka-Light";
+  --font-fredoka-medium: "Fredoka-Medium";
+  --font-fredoka-semibold: "Fredoka-SemiBold";
+  --font-fredoka-bold: "Fredoka-Bold";
+
+  --font-nunito: "Nunito-Regular";
+  --font-nunito-light: "Nunito-Light";
+  --font-nunito-extralight: "Nunito-ExtraLight";
+  --font-nunito-medium: "Nunito-Medium";
+  --font-nunito-semibold: "Nunito-SemiBold";
+  --font-nunito-bold: "Nunito-Bold";
+  --font-nunito-extrabold: "Nunito-ExtraBold";
+  --font-nunito-black: "Nunito-Black";
+}
