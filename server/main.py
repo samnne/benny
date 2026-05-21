@@ -1,28 +1,27 @@
-from lib.gemini import client, model_str, config
-from google.genai import types
-from lib.utils import prepare_output
+import time
+from fastapi import FastAPI, Request
+from controllers import receipt
+
+app = FastAPI()
 
 
-def parse_receipt(bytes):
 
-    response = client.models.generate_content(
-        model=model_str,
-        contents=[
-            types.Part.from_bytes(data=bytes, mime_type="image/jpeg"),
-            "Describe what the receipt in the image says line by line.",
-        ],
-        config=config,
-    )
-    data_str: str | None = response.text
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
-    if not data_str:
-        return ""
 
-    data = prepare_output(data_str)
-    return data 
+app.include_router(receipt.router)
 
-if __name__ == "__main__":
-    file = open("./assets/receipt.jpg", "rb")
-    bytes = file.read()
-    parse_receipt(bytes)
-    file.close()
+
+@app.get("/")
+async def root_call():
+    return {"message": "Welcome to the Benny API!"}
+
+
+
+

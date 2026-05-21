@@ -12,9 +12,7 @@
       "supportsTablet": true,
       "icon": "./assets/icons/benny.png"
     },
-    "platforms": [
-      "ios"
-    ],
+    "platforms": ["ios"],
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",

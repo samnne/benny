@@ -1,6 +1,8 @@
 from google import genai
+from google.genai import types
 from dotenv import load_dotenv
 import os
+from lib.utils import prepare_output
 
 load_dotenv()
 
@@ -72,16 +74,29 @@ Assign exactly one category based on the dominant purchase type:
 """
 
 
-model_str:str = "gemini-2.5-flash-lite"
-
+model_str: str = "gemini-2.5-flash-lite"
 
 
 client = genai.Client(
     api_key=api_key,
-    
+)
+
+config = genai.types.GenerateContentConfig(
+    system_instruction=system_prompt, temperature=0.1
 )
 
 
+def parse_receipt(bytes):
+    response = client.models.generate_content(
+        model=model_str,
+        contents=[
+            types.Part.from_bytes(data=bytes, mime_type="image/jpeg"),
+            "Describe what the receipt in the image says line by line.",
+        ],
+        config=config,
+    )
+    data_str: str | None = response.text
 
-config = genai.types.GenerateContentConfig(system_instruction=system_prompt, temperature=0.1)
+    data = prepare_output(data_str)
 
+    return data

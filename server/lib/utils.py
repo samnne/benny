@@ -2,21 +2,23 @@ import json
 
 def prepare_output(s) -> object | None:
 
-    b_set = set()
-    l, r = 0, 1
+  
+    l, r = 0, len(s) - 1
     for i in range(len(s)):
-        if s[i] == "{" and "{" not in b_set:
-            b_set.add("{")
+        if s[i] == "{":
             l = i
             break
 
     for i in range(len(s) - 1, 0, -1):
-        if s[i] == "}" and "}" not in b_set:
-            b_set.add("}")
-            r = i
+       
+        if s[i] == "}":
+          
+            r = i + 1
             break
     
     try:
-        return json.loads(s[l, r +1])
+        
+        return json.loads(s[l:r])
     except Exception as e:
         return None
+
