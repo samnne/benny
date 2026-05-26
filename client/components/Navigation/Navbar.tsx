@@ -7,7 +7,7 @@ import { MotiPressable } from "moti/interactions";
 import { useRouter } from "expo-router";
 
 const Navbar = () => {
-    const router = useRouter()
+  const router = useRouter();
   return (
     <View className="w-full px-4 flex-row justify-between items-center">
       <View className="flex-1">
@@ -17,28 +17,12 @@ const Navbar = () => {
           style={{ width: 60, height: 68 }}
         />
       </View>
-      <MotiPressable
-        style={{
-          backgroundColor: theme.colors.primary,
-          borderRadius: "50%",
-          padding: 10,
-        }}
-        onPress={() => router.push("/(screens)/price")}
-        animate={useMemo(
-          () =>
-            ({ hovered, pressed }) => {
-              "worklet";
-
-              return {
-                opacity: hovered || pressed ? 0.5 : 1,
-                scale: hovered || pressed ? 1.2 : 1
-              };
-            },
-          [],
-        )}
-      >
-        <SymbolView name="plus" tintColor={theme.colors.background} />
-      </MotiPressable>
+      <View className="flex-row justify-center items-center">
+        <Text className="text-4xl leading-0 font-nunito-black tracking-wide text-primary">
+          BENNY
+        </Text>
+        <SymbolView name="pawprint" tintColor={theme.colors.primary} size={30} />
+      </View>
     </View>
   );
 };

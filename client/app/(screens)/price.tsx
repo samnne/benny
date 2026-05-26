@@ -1,6 +1,6 @@
 import { View, FlatList, Pressable } from "react-native";
 import React, { useMemo, useState } from "react";
-
+import { randomUUID } from "expo-crypto";
 import { AnimatePresence, MotiView, SafeAreaView as RNSAV, Text } from "moti";
 import { styled } from "nativewind";
 import { MotiPressable } from "moti/interactions";
@@ -8,15 +8,17 @@ import { SymbolView } from "expo-symbols";
 import { theme } from "@/constants/constants";
 import { useRouter } from "expo-router";
 import { playHaptic } from "@/constants/functions";
+import { useTrip } from "@/store/zustand";
 
 const SafeAreaView = styled(RNSAV);
 const numberPad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "x"];
 const Price = () => {
   const [price, setPrice] = useState("0");
   const router = useRouter();
+  const { addItem } = useTrip();
   const animatePress = useMemo(
     () =>
-      ({ hovered, pressed }: { hovered: boolean; pressed: boolean }) => {
+      ({ hovered, pressed }) => {
         "worklet";
 
         return {
@@ -30,7 +32,7 @@ const Price = () => {
   );
   const continueAnimation = useMemo(
     () =>
-      ({ hovered, pressed }: { hovered: boolean; pressed: boolean }) => {
+      ({ hovered, pressed }) => {
         "worklet";
 
         return {
@@ -79,6 +81,19 @@ const Price = () => {
         setPrice((prev) => prev + value);
         break;
     }
+  }
+  function handleAddItem(name?: string, price?: number) {
+    const index = useTrip.getState().items.length + 1;
+
+    const newItem: ReceiptItem = {
+      id: randomUUID(),
+      name: name?.trim() || `Item ${index}`, // ✅ fallback name
+      quantity: 1,
+      unit_price: price ?? 0,
+      total_price: price ?? 0, // ✅ matches schema
+    };
+
+    useTrip.getState().addItem(newItem);
   }
   return (
     <SafeAreaView className="flex-1 bg-primary p-4   justify-center items-center ">
@@ -168,6 +183,10 @@ const Price = () => {
           }}
           onPress={() => {
             playHaptic();
+            if (router.canGoBack()) {
+              handleAddItem("", Number.parseFloat(price))
+              router.back();
+            }
           }}
           animate={continueAnimation}
         >

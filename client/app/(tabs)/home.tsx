@@ -1,76 +1,103 @@
-import { Pressable, Text, View } from "react-native";
+import {
+  Pressable,
+  Text,
+  View,
+
+} from "react-native";
 import React, { useMemo, useState } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Navbar from "@/components/Navigation/Navbar";
 import { SymbolView } from "expo-symbols";
-import { categories, theme } from "@/constants/constants";
+import { theme } from "@/constants/constants";
 import { clsx } from "clsx";
-
-import Svg, { Circle } from "react-native-svg";
-import CategoryCard from "@/components/UI/CategoryCard";
 import { StatusBar } from "expo-status-bar";
 import { AnimatedCircularProgress } from "react-native-circular-progress";
-
 import { MotiView, ScrollView } from "moti";
 import { MotiPressable } from "moti/interactions";
 import { useRouter } from "expo-router";
+import { useBudget, useReceipt } from "@/store/zustand";
+import { BudgetModal } from "@/components/UI/BudgetModal";
 
-const ITEMS_PER_PAGE = 4; // 2x2 grid = 4 items per page
+// ─── Budget setter modal ──────────────────────────────────────────────────────
 
+// ─── Category icon map ────────────────────────────────────────────────────────
+const CATEGORY_ICONS: Record<string, string> = {
+  groceries: "cart.fill",
+  dining: "fork.knife",
+  transport: "car.fill",
+  entertainment: "film.fill",
+  health: "heart.fill",
+  shopping: "bag.fill",
+  utilities: "bolt.fill",
+  other: "square.grid.2x2.fill",
+};
+
+// ─── Home ─────────────────────────────────────────────────────────────────────
 const Home = () => {
   const insets = useSafeAreaInsets();
-  const [displayedPrice, setDisplayedPrice] = useState("1,234");
+  const router = useRouter();
+
+  const { budget, setBudget } = useBudget();
+  const { receipts } = useReceipt();
+
   const [toggled, setToggled] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
-  const [timePct, setTimePct] = useState(70);
-  const router = useRouter()
-  const [budgetPct, setBudgetPct] = useState(40);
+  const [budgetModalVisible, setBudgetModalVisible] = useState(false);
+
+  // ✅ Real totals from receipts
+  const totalSpent = useMemo(
+    () => receipts.reduce((acc, r) => acc + (r.total ?? 0), 0),
+    [receipts],
+  );
+  const totalLeft = budget - totalSpent;
+  const budgetPct = Math.min((totalSpent / budget) * 100, 100);
+  const displayedPrice = toggled ? totalLeft.toFixed(2) : totalSpent.toFixed(2);
+
+  // Placeholder — wire to real pay period when available
+  const timePct = 70;
+
+  const isOverBudget = totalSpent > budget;
+  const onTrackLabel = isOverBudget
+    ? "Over Budget"
+    : budgetPct < 50
+      ? "On Track"
+      : "Getting Close";
+
+  const recentReceipts = receipts.slice(-5).reverse();
+
   const animatePress = useMemo(
     () =>
-      ({ hovered, pressed }) => {
-        return {
-          opacity: hovered || pressed ? 0.5 : 1,
-          translateY: hovered || pressed ? 10 : 0,
-          scale: hovered || pressed ? 0.8 : 1,
-        };
-      },
+      ({ hovered, pressed }: any) => ({
+        opacity: hovered || pressed ? 0.5 : 1,
+        translateY: hovered || pressed ? 10 : 0,
+        scale: hovered || pressed ? 0.8 : 1,
+      }),
     [],
-  );
-  const totalPages = Math.ceil(categories.length / ITEMS_PER_PAGE);
-  const paginatedCategories = categories.slice(
-    currentPage * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE + ITEMS_PER_PAGE,
   );
 
   return (
     <View className="flex-1" style={{ paddingTop: insets.top }}>
       <Navbar />
       <ScrollView
-        className="flex-1 gap-4 px-4 "
+        className="flex-1 gap-4 px-4"
         contentContainerClassName="pb-30"
       >
-        {/* Expenses For the Month */}
+        {/* ── Spent / Left toggle ── */}
         <View className="w-full justify-center py-12 gap-2 items-center">
-          <Pressable>
+          {/* ✅ Tap budget to edit it */}
+          <Pressable onPress={() => setBudgetModalVisible(true)}>
             <Text className="text-lg text-text/50 justify-center items-center">
-              April 2026{" "}
+              Budget: ${budget.toFixed(2)}{" "}
               <SymbolView
-                className="w-6 h-6"
                 size={12}
                 tintColor={theme.colors.text + "50"}
-                name="arrowtriangle.down.fill"
+                name="pencil"
               />
             </Text>
           </Pressable>
+
           <MotiPressable
-            onPress={() => {
-              setToggled((prev) => !prev);
-              setDisplayedPrice((prev) => (prev === "1,234" ? "766" : "1,234"));
-            }}
-            style={{
-              alignItems: "center",
-              justifyContent: "center",
-            }}
+            onPress={() => setToggled((prev) => !prev)}
+            style={{ alignItems: "center", justifyContent: "center" }}
             from={{ opacity: 0.9 }}
             animate={animatePress}
             transition={{ type: "spring", damping: 50, stiffness: 400 }}
@@ -85,28 +112,32 @@ const Home = () => {
               <Text
                 className={clsx(
                   "text-6xl font-bold",
-                  displayedPrice === "1,234"
-                    ? "text-red-500"
-                    : "text-green-500",
+                  toggled
+                    ? totalLeft >= 0
+                      ? "text-green-500"
+                      : "text-red-500"
+                    : isOverBudget
+                      ? "text-red-500"
+                      : "text-primary",
                 )}
               >
                 ${displayedPrice}
               </Text>
             </MotiView>
             <Text className="text-gray-400">
-              {!toggled ? "Spent" : "Left To Spend"}
+              {toggled ? "Left To Spend" : "Spent"}
             </Text>
           </MotiPressable>
         </View>
 
-        <View className="gap-4 justify-center items-center     p-4 border-pill/20 rounded-3xl">
-          {/* <PayPeriodGauge timePct={70} budgetPct={40} /> */}
+        {/* ── Gauges ── */}
+        <View className="gap-4 justify-center items-center p-4 border-pill/20 rounded-3xl">
           <View className="relative justify-center items-center">
             <AnimatedCircularProgress
               size={200}
               style={{ height: 120, paddingTop: 20 }}
               width={15}
-              fill={timePct} // <-- was fill={80}
+              fill={10}
               rotation={270}
               arcSweepAngle={180}
               lineCap="round"
@@ -127,19 +158,35 @@ const Home = () => {
               size={250}
               style={{ height: 150, position: "absolute", top: 0 }}
               width={15}
-              fill={budgetPct} // <-- was fill={80}
+              fill={budgetPct}
               rotation={270}
               arcSweepAngle={180}
               lineCap="round"
-              tintColor={theme.colors.secondary}
+              tintColor={
+                isOverBudget ? theme.colors.secondary : theme.colors.secondary
+              }
               backgroundColor={theme.colors.secondary + "50"}
             >
               {() => <View />}
             </AnimatedCircularProgress>
           </View>
-          <View className="bg-accent/25 p-2 rounded-full ">
-            <Text className="font-bold text-primary">On Track</Text>
+
+          <View
+            className={clsx(
+              "p-2 rounded-full px-4",
+              isOverBudget ? "bg-red-100" : "bg-accent/25",
+            )}
+          >
+            <Text
+              className={clsx(
+                "font-bold",
+                isOverBudget ? "text-red-500" : "text-primary",
+              )}
+            >
+              {onTrackLabel}
+            </Text>
           </View>
+
           <View className="flex-row gap-2">
             {[
               {
@@ -149,25 +196,25 @@ const Home = () => {
               },
               {
                 label: "Budget Used",
-                value: "18%",
+                value: `${budgetPct.toFixed(0)}%`,
                 color: theme.colors.dark.pill,
               },
               {
-                label: "Difference",
-                value: "+20%",
-                color: theme.colors.primary,
+                label: "Remaining",
+                value: `$${Math.abs(totalLeft).toFixed(0)}`,
+                color: isOverBudget
+                  ? theme.colors.secondary
+                  : theme.colors.primary,
               },
             ].map((item) => (
               <View
                 key={item.label}
-                className="w-30 rounded-2xl justify-between  p-2 h-25 shadow"
+                className="w-30 rounded-2xl justify-between p-2 h-25 shadow"
               >
                 <Text className="text-sm font-fredoka">{item.label}</Text>
                 <Text
-                  className="text-2xl font-nunito  self-end"
-                  style={{
-                    color: item?.color,
-                  }}
+                  className="text-2xl font-nunito self-end"
+                  style={{ color: item.color }}
                 >
                   {item.value}
                 </Text>
@@ -175,76 +222,79 @@ const Home = () => {
             ))}
           </View>
         </View>
-        <View className="gap-4 justify-center w-full     px-8 border-pill/20 rounded-3xl">
-          <Text className="text-4xl font-nunito-black">Reciept Overview</Text>
-          <ScrollView className=" flex-1 flex-row " horizontal>
-            {[
-              {
-                store: "Target",
-                amount: "$190",
-                date: "2026/04/02",
-                icon: "cart",
-              },
-              {
-                store: "Coffee Shop",
-                amount: "$28",
-                date: "2026/04/01",
-                icon: "cup.and.saucer",
-              },
-              {
-                store: "Amazon",
-                amount: "$72",
-                date: "2026/03/31",
-                icon: "cart.fill",
-              },
-            ].map((receipt) => (
-              <View
-                key={`${receipt.store}-${receipt.date}`}
-                className="mr-2 items-center p-4 gap-4 rounded-2xl flex-row justify-between border border-primary/20"
-              >
-                <View className="flex-row items-center gap-2 ">
-                  <View className="flex-row justify-center items-center bg-primary/20 rounded-full p-2">
-                    <SymbolView
-                      name={receipt.icon}
-                      tintColor={theme.colors.primary}
-                    />
+
+        {/* ── Receipt overview ── */}
+        <View className="gap-4 justify-center w-full px-2 border-pill/20 rounded-3xl">
+          <Text className="text-4xl font-nunito-black">Receipt Overview</Text>
+
+          {recentReceipts.length === 0 ? (
+            <View className="items-center py-8 gap-2 border-2 border-dashed border-primary/20 rounded-2xl">
+              <SymbolView
+                name="receipt"
+                size={32}
+                tintColor={theme.colors.primary + "40"}
+              />
+              <Text className="font-nunito text-text/40">No receipts yet</Text>
+            </View>
+          ) : (
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              className="flex-1 flex-row"
+            >
+              {recentReceipts.map((receipt) => (
+                <Pressable
+                  key={receipt.id}
+                  onPress={() => router.push("/receipts")}
+                  className="mr-2 items-center p-4 gap-4 rounded-2xl flex-row justify-between border border-primary/20"
+                >
+                  <View className="flex-row items-center gap-2">
+                    <View className="flex-row justify-center items-center bg-primary/20 rounded-full p-2">
+                      <SymbolView
+                        name={CATEGORY_ICONS[receipt.category] ?? "cart.fill"}
+                        tintColor={theme.colors.primary}
+                      />
+                    </View>
+                    <Text
+                      className="text-2xl w-40 font-nunito-bold uppercase"
+                      numberOfLines={1}
+                      ellipsizeMode="tail"
+                    >
+                      {receipt.merchant?.name ?? "Store"}
+                    </Text>
                   </View>
-                  <Text
-                    className="text-2xl w-40 font-nunito-bold uppercase"
-                    numberOfLines={1}
-                    ellipsizeMode="tail"
-                  >
-                    {receipt.store}
-                  </Text>
-                </View>
-                <View className="justify-end items-end ">
-                  <Text className="text-3xl text-primary font-nunito-black">
-                    {receipt.amount}
-                  </Text>
-                  <Text className="text-xs">{receipt.date}</Text>
-                </View>
-              </View>
-            ))}
-          </ScrollView>
+                  <View className="justify-end items-end">
+                    <Text className="text-3xl text-primary font-nunito-black">
+                      ${receipt.total.toFixed(2)}
+                    </Text>
+                    <Text className="text-xs">{receipt.date ?? "—"}</Text>
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          )}
+
           <Pressable
-            onPress={()=> router.push('/receipts')}
+            onPress={() => router.push("/(screens)/new")}
             className="mr-2 items-center p-2 gap-4 rounded-2xl flex-row justify-center border-dashed border bg-background border-primary/20"
           >
-            <View className="flex-row flex-1 w-full items-center gap-2 ">
-              <Text
-                className="text-xl w-full text-primary/80 font-bold"
-                numberOfLines={1}
-                ellipsizeMode="tail"
-              >
-                Create New Receipt
-              </Text>
+            <Text
+              className="text-xl flex-1 w-full text-primary/80 font-bold"
+              numberOfLines={1}
+            >
+              Create New Receipt
+            </Text>
+            <View className="flex-row items-center bg-primary/10 rounded-full p-2">
+              <SymbolView name="plus" tintColor={theme.colors.primary} />
             </View>
-              <View className="flex-row  items-center bg-primary/10 rounded-full p-2">
-                <SymbolView name={"plus"} tintColor={theme.colors.primary} />
-              </View>
           </Pressable>
         </View>
       </ScrollView>
+
+      <BudgetModal
+        visible={budgetModalVisible}
+        onClose={() => setBudgetModalVisible(false)}
+      />
       <StatusBar style="dark" />
     </View>
   );

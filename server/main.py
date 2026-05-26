@@ -1,9 +1,9 @@
 import time
 from fastapi import FastAPI, Request
-from controllers import receipt
-
+from api import receipt
+from core.security import create_access_token
+from core.middleware import ValidateSession
 app = FastAPI()
-
 
 
 @app.middleware("http")
@@ -15,13 +15,12 @@ async def add_process_time_header(request: Request, call_next):
     return response
 
 
+app.add_middleware(ValidateSession)
+
 app.include_router(receipt.router)
 
-
 @app.get("/")
-async def root_call():
-    return {"message": "Welcome to the Benny API!"}
-
-
-
-
+async def main():
+    token = await create_access_token(sub="123", scopes="user")
+   
+    return {"message": "Welcome to the Benny API!", "token": token}

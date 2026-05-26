@@ -18,7 +18,7 @@
   --color-secondary-dark: #7c430e;
   --color-accent-dark: #a17f12;
   --color-pill-dark: #050404;
-  
+
   --font-fredoka: "Fredoka-Regular";
   --font-fredoka-light: "Fredoka-Light";
   --font-fredoka-medium: "Fredoka-Medium";
@@ -33,4 +33,10 @@
   --font-nunito-bold: "Nunito-Bold";
   --font-nunito-extrabold: "Nunito-ExtraBold";
   --font-nunito-black: "Nunito-Black";
+}
+
+@layer components {
+  .ob-button {
+    @apply px-6 py-4 rounded-full w-80 items-center flex-row justify-between gap-2;
+  }
 }

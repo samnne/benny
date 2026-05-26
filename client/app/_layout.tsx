@@ -1,8 +1,10 @@
 import { Stack } from "expo-router";
 import "../globals.css";
 import "react-native-reanimated";
-import "react-native-gesture-handler";
+
 import { useFonts } from "expo-font";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "Fredoka-Bold": require("@/assets/fonts/Fredoka-Bold.ttf"),
@@ -19,17 +21,21 @@ export default function RootLayout() {
     "Nunito-Regular": require("@/assets/fonts/Nunito-Regular.ttf"),
     "Nunito-SemiBold": require("@/assets/fonts/Nunito-SemiBold.ttf"),
   });
-  if (!fontsLoaded){
-    alert("Fonts Failed to Load")
-  }
+ 
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+   
+      <GestureHandlerRootView>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            
+          }}
+          
+        >
+          <Stack.Screen  name="(tabs)" />
+        </Stack>
+      </GestureHandlerRootView>
+
   );
 }
