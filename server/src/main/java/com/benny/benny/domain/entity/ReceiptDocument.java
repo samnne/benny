@@ -21,6 +21,14 @@ public class ReceiptDocument {
     this.id = id;
   }
 
+  public String getUid() {
+    return uid;
+  }
+
+  public void setUid(String uid) {
+    this.uid = uid;
+  }
+
   public Merchant getMerchant() {
     return merchant;
   }
@@ -146,6 +154,7 @@ public class ReceiptDocument {
   private String category;
   private String confidence;
   private String bennyMessage;
+  private String uid;
 
   // Default no-arg constructor required by Firestore SDK
   public ReceiptDocument() {}
@@ -165,7 +174,8 @@ public class ReceiptDocument {
     String paymentMethod,
     String category,
     String confidence,
-    String bennyMessage
+    String bennyMessage,
+    String uid
   ) {
     this.id = id;
     this.merchant = merchant;
@@ -182,6 +192,7 @@ public class ReceiptDocument {
     this.category = category;
     this.confidence = confidence;
     this.bennyMessage = bennyMessage;
+    this.uid = uid;
   }
 
   // Nested classes (No separate collections or tables needed)

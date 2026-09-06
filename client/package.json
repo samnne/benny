@@ -23,6 +23,7 @@
     "clsx": "^2.1.1",
     "expo": "^57.0.0",
     "expo-apple-authentication": "~57.0.1",
+    "expo-application": "~57.0.2",
     "expo-auth-session": "~57.0.11",
     "expo-build-properties": "~57.0.16",
     "expo-camera": "~57.0.4",

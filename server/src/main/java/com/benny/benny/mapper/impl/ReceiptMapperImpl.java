@@ -108,7 +108,8 @@ public class ReceiptMapperImpl implements ReceiptMapper {
       document.getPaymentMethod(),
       document.getCategory(),
       document.getConfidence(),
-      document.getBennyMessage()
+      document.getBennyMessage(),
+      document.getUid()
     );
   }
 }

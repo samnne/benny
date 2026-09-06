@@ -1,4 +1,4 @@
-import { useBudget } from "@/store/zustand";
+import { useBudget, usePreferences } from "@/store/zustand";
 import { Text, View } from "moti";
 import { useState } from "react";
 import { KeyboardAvoidingView, Modal, Platform, Pressable } from "react-native";
@@ -12,13 +12,13 @@ export const BudgetModal = ({
   visible: boolean;
   onClose: () => void;
 }) => {
-  const { budget, setBudget } = useBudget();
-  const [input, setInput] = useState(`${budget}`);
+  const { budgetPerPeriod, setBudgetPerPeriod } = usePreferences();
+  const [input, setInput] = useState(`${budgetPerPeriod}`);
 
   function handleSave() {
     const parsed = parseFloat(input);
     if (!isNaN(parsed) && parsed > 0) {
-      setBudget(parsed);
+      setBudgetPerPeriod(parsed);
     }
     onClose();
   }

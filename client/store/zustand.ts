@@ -1,4 +1,4 @@
-import { BASE_URL } from "@/constants/constants";
+import { BASE_URL, requestHeader } from "@/constants/constants";
 import { create } from "zustand";
 
 type TripState = {
@@ -91,25 +91,45 @@ export const useReceipt = create<ReceiptState>((set, get) => {
     setServerReceipt: (receipt: Receipt) => set({ serverReceipt: receipt }),
     getReceipts: async () => {
       try {
-        const res = await fetch(`${BASE_URL}/api/receipt/`);
-        console.log("res", res);
+        const res = await fetch(`${BASE_URL}/api/receipt/`, {
+          ...requestHeader(useAuth.getState().token),
+        });
+
         const data = await res.json();
-        for (let obj of data) {
-          const serverItems = obj.items.map(
-            (item: Receipt & { unitPrice: number; totalPrice: number }) => {
-              return {
-                ...item,
-                unit_price: item.unitPrice,
-                total_price: item.totalPrice,
-              };
-            },
-          );
-          get().addReceipt({
+
+        // 1. Defend against non-array responses (like 401 Unauthorized HTML/JSON errors)
+        if (!Array.isArray(data)) {
+          console.error("Expected an array of receipts, but got:", data);
+          return get().receipts;
+        }
+
+        // 2. Format all the receipts in memory FIRST
+        const formattedReceipts = data.map((obj) => {
+          // Safely default to an empty array if obj.items is null/undefined
+          const serverItems = (obj.items || []).map((item: any) => ({
+            ...item,
+            unit_price: item.unitPrice,
+            total_price: item.totalPrice,
+          }));
+
+          return {
             ...obj,
             payment_method: obj.paymentMethod,
             benny_message: obj.bennyMessage,
-            items: [...serverItems],
-          });
+            items: serverItems,
+          };
+        });
+
+        // 3. Filter out duplicates compared to what is already in state
+        const currentReceipts = get().receipts;
+        const newReceipts = formattedReceipts.filter(
+          (incoming) =>
+            !currentReceipts.some((existing) => existing.id === incoming.id),
+        );
+
+        // 4. Update the Zustand state EXACTLY ONCE
+        if (newReceipts.length > 0) {
+          set({ receipts: [...currentReceipts, ...newReceipts] });
         }
       } catch (error) {
         console.error("Error fetching receipts:", error);
@@ -145,8 +165,18 @@ export const useReceipt = create<ReceiptState>((set, get) => {
         },
       });
     },
-    deleteReceipt: (id: string) => {
-      set({ receipts: get().receipts.filter((r) => r.id !== id) });
+    deleteReceipt: async (id: string) => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/receipt/?receiptId=${id}`, {
+          ...requestHeader(useAuth.getState().token),
+          method: "delete"
+        });
+        const data = await res.json();
+
+        set({ receipts: get().receipts.filter((r) => r.id !== data.id) });
+      } catch (error) {
+        return;
+      }
     },
   };
 });
@@ -166,3 +196,65 @@ export const useCamera = create<CameraState>((set, get) => {
     setBlob: (blob: Blob) => set({ blob }),
   };
 });
+
+type PayFrequency = "weekly" | "biweekly" | "semimonthly" | "monthly";
+
+type NotificationPrefs = {
+  weeklySummary: boolean;
+  budgetAlert: boolean;
+  paydayReminder: boolean;
+};
+
+type PreferencesState = {
+  // Pay period
+  payFrequency: PayFrequency;
+  nextPayday: string | null; // ISO 8601 date string
+
+  // Spending goal
+  budgetPerPeriod: number;
+
+  // Benny personality
+  chattiness: ChattinessLevel;
+
+  // Notifications
+  notifications: NotificationPrefs;
+
+  // Setters
+  setPayFrequency: (freq: PayFrequency) => void;
+  setNextPayday: (date: string) => void;
+  setBudgetPerPeriod: (amount: number) => void;
+  setChattiness: (level: ChattinessLevel) => void;
+  setNotifications: (prefs: Partial<NotificationPrefs>) => void;
+
+  // Onboarding completed flag
+  onboardingComplete: boolean;
+  setOnboardingComplete: (v: boolean) => void;
+
+  reset: () => void;
+};
+
+const defaultPreferences = {
+  payFrequency: "biweekly" as PayFrequency,
+  nextPayday: null,
+  budgetPerPeriod: 1200,
+  chattiness: 1 as ChattinessLevel,
+  notifications: {
+    weeklySummary: true,
+    budgetAlert: true,
+    paydayReminder: false,
+  },
+  onboardingComplete: false,
+};
+
+export const usePreferences = create<PreferencesState>((set, get) => ({
+  ...defaultPreferences,
+
+  setPayFrequency: (freq) => set({ payFrequency: freq }),
+  setNextPayday: (date) => set({ nextPayday: date }),
+  setBudgetPerPeriod: (amount) => set({ budgetPerPeriod: amount }),
+  setChattiness: (level) => set({ chattiness: level }),
+  setNotifications: (prefs) =>
+    set({ notifications: { ...get().notifications, ...prefs } }),
+  setOnboardingComplete: (v) => set({ onboardingComplete: v }),
+  reset: () => set(defaultPreferences),
+}));

@@ -3,10 +3,11 @@ import ReceiptCard from "@/components/UI/Receipt/ReceiptCard";
 import ReceiptCardSkeleton from "@/components/UI/Receipt/ReceiptCardSkeleton";
 import { theme } from "@/constants/constants";
 import { useReceipt } from "@/store/zustand";
-import { useRouter } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { ScrollView } from "moti";
 import { styled } from "nativewind";
+import { useEffect } from "react";
 import { Pressable, Text, View } from "react-native";
 import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
 
@@ -15,8 +16,15 @@ const SafeAreaView = styled(RNSAV);
 const Reciepts = () => {
   const router = useRouter();
 
-  const { receipts, isLoading } = useReceipt();
-
+  const { receipts, isLoading, getReceipts, deleteReceipt } = useReceipt();
+  useEffect(()=> {
+    try {
+      
+      void getReceipts();
+    } catch (error) {
+      console.log(error)
+    }
+  }, [])
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />

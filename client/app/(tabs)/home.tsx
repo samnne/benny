@@ -1,7 +1,9 @@
 import Navbar from "@/components/Navigation/Navbar";
 import { BudgetModal } from "@/components/UI/BudgetModal";
+import { auth } from "@/config/firebase";
 import { CATEGORY_ICONS, theme } from "@/constants/constants";
-import { useBudget, useReceipt } from "@/store/zustand";
+import { getDaysUntil } from "@/constants/functions";
+import { useAuth, useBudget, usePreferences, useReceipt } from "@/store/zustand";
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
@@ -17,13 +19,44 @@ const SafeAreaView = styled(RNSAV);
 // ─── Home ─────────────────────────────────────────────────────────────────────
 const Home = () => {
   const router = useRouter();
-  const { budget } = useBudget();
+
+  const {token, setToken} = useAuth()
   const { receipts, getReceipts } = useReceipt();
   const [toggled, setToggled] = useState(false);
+  const {budgetPerPeriod, nextPayday} = usePreferences()
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+
+
+  const { currentUser } = auth;
+  const refreshReceipts = async () => {
+    // 1. Check for the user FIRST
+    if (!currentUser) {
+      console.warn("No user ready yet, skipping fetch.");
+      return;
+    }
+    if (!token){
+      const tk = await currentUser.getIdToken();
+      setToken(tk);
+    }
+
+    // 2. Only start the spinner if we know we are fetching
+    setRefreshing(true);
+    try {
+      await getReceipts();
+    } catch (error) {
+      console.error("Failed to refresh:", error);
+    } finally {
+      // 3. Guaranteed to stop the spinner
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    void refreshReceipts();
+  }, []);
   const safeReceipts = receipts || [];
-  const safeBudget = budget || 0;
+  const safeBudget = budgetPerPeriod || 0;
   const totalSpent = useMemo(
     () => safeReceipts.reduce((acc, r) => acc + (Number(r.total) || 0), 0),
     [safeReceipts],
@@ -39,19 +72,6 @@ const Home = () => {
     : budgetPct < 50
       ? "On Track"
       : "Getting Close";
-  const refreshReceipts = async () => {
-    setRefreshing(true);
-    try {
-      await getReceipts();
-    } finally {
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    void refreshReceipts();
-  }, []);
-
   const animatePress = useMemo(
     () =>
       ({ hovered, pressed }: any) => {
@@ -64,6 +84,8 @@ const Home = () => {
       },
     [],
   );
+  
+
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />
@@ -184,7 +206,7 @@ const Home = () => {
             {[
               {
                 label: "Days till next Pay",
-                value: "24",
+                value: getDaysUntil(nextPayday),
                 color: theme.colors.dark.pill,
               },
               {
@@ -244,6 +266,7 @@ const Home = () => {
                   <View className="flex-row items-center gap-2">
                     <View className="flex-row justify-center items-center bg-primary/20 rounded-full p-2">
                       <SymbolView
+                      // @ts-ignore
                         name={CATEGORY_ICONS[receipt.category] ?? "cart.fill"}
                         tintColor={theme.colors.primary}
                       />

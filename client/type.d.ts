@@ -45,3 +45,4 @@ interface Receipt {
   confidence: Confidence;
   benny_message: string;
 }
+type ChattinessLevel = 0 | 1 | 2; // 0 = Quiet, 1 = Friendly, 2 = Chatty

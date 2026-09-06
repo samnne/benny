@@ -1,23 +1,23 @@
 package com.benny.benny.controller;
 
-import java.util.List;
-
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
-
 import com.benny.benny.domain.CreateReceiptDocument;
 import com.benny.benny.domain.DTO.ReceiptDto;
 import com.benny.benny.domain.entity.ReceiptDocument;
 import com.benny.benny.mapper.ReceiptMapper;
 import com.benny.benny.service.GeminiService;
 import com.benny.benny.service.ReceiptService;
-
 import io.github.cdimascio.dotenv.Dotenv;
+import java.util.List;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestAttribute;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/receipt")
@@ -38,13 +38,18 @@ public class ReceiptController {
   }
 
   @GetMapping("/")
-  public ResponseEntity<List<ReceiptDocument>> getMethodName() {
-    List<ReceiptDocument> document = receiptService.getReceipts("uid");
+  public ResponseEntity<List<ReceiptDocument>> getMethodName(
+    @RequestAttribute("uid") String uid
+  ) {
+    List<ReceiptDocument> document = receiptService.getReceipts(uid);
     return ResponseEntity.ok(document);
   }
 
   @PostMapping("/")
-  public ResponseEntity<String> receiptRequest(@RequestBody byte[] bytes) {
+  public ResponseEntity<String> receiptRequest(
+    @RequestBody byte[] bytes,
+    @RequestAttribute("uid") String uid
+  ) {
     try {
       System.out.println(bytes);
       String response = geminiService.sendResponse(bytes);
@@ -64,18 +69,32 @@ public class ReceiptController {
 
   @PostMapping("/save")
   public ResponseEntity<ReceiptDto> saveReceipt(
-    @RequestBody ReceiptDto createReceiptDto
+    @RequestBody ReceiptDto createReceiptDto,
+    @RequestAttribute("uid") String uid
   ) {
     System.out.println("Saving Receipt");
     CreateReceiptDocument createReceiptDocumentRequest = receiptMapper.fromDto(
       createReceiptDto
     );
     ReceiptDocument receiptDocument = receiptService.saveReceipt(
-      createReceiptDocumentRequest
+      createReceiptDocumentRequest,
+      uid
     );
     ReceiptDto receiptDto = receiptMapper.toDto(receiptDocument);
-    System.out.println(receiptDto.id());
+
 
     return new ResponseEntity<>(receiptDto, HttpStatus.CREATED);
+  }
+
+  @DeleteMapping("/")
+  public ResponseEntity<ReceiptDto> deleteReceipt(
+    @RequestParam String receiptId,
+    @RequestAttribute("uid") String uid
+  ) {
+    System.out.println(receiptId);
+    ReceiptDocument deletedDoc = receiptService.deleteReceipt(receiptId, uid);
+    ReceiptDto receiptDto = receiptMapper.toDto(deletedDoc);
+
+    return new ResponseEntity<>(receiptDto, HttpStatus.OK);
   }
 }

@@ -1,0 +1,11 @@
+name: benny-mono
+services:
+  backend:
+    build: .
+    ports:
+      - "8000:8080"
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
+    volumes:
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/firebase-service-account.json:ro

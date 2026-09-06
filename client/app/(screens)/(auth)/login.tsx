@@ -20,6 +20,7 @@ import { styled } from "nativewind";
 import { auth } from "@/config/firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import bennyHi from "../../../assets/images/benny-hi.png";
+import { useAuth } from "@/store/zustand";
 const SafeAreaView = styled(RNSAV);
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -28,6 +29,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const { token, setToken } = useAuth();
 
   const loginBtn = useButtonAnimation();
   const signUpLink = useButtonAnimation();
@@ -37,12 +39,14 @@ const Login = () => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       if (user) {
+        setToken(await user.getIdToken());
         router.replace("/home");
       }
     } catch (error) {
       console.log(error);
     }
   }
+  
 
   return (
     <KeyboardAvoidingView

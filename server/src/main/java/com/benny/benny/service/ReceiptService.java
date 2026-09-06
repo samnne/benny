@@ -6,6 +6,8 @@ import com.benny.benny.domain.CreateReceiptDocument;
 import com.benny.benny.domain.entity.ReceiptDocument;
 
 public interface ReceiptService {
- ReceiptDocument saveReceipt(CreateReceiptDocument request); 
+ ReceiptDocument saveReceipt(CreateReceiptDocument request, String uid); 
+ ReceiptDocument deleteReceipt(String receiptId, String uid); 
   List<ReceiptDocument> getReceipts(String uid);
+
 }

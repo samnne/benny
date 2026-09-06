@@ -1,1 +1,1 @@
-index -> account creation (welcome.tsx) -> 
+index -> account creation (welcome.tsx) -> pay-period -> spending goal -> first receipt scan (free) then 3 free then pay -> dashboard.

@@ -1,8 +1,8 @@
 import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { BASE_URL, getBennyMessage, theme } from "@/constants/constants";
-import { useBudget, useReceipt, useTrip } from "@/store/zustand";
+import { BASE_URL, getBennyMessage, requestHeader, theme } from "@/constants/constants";
+import { useAuth, useBudget, useReceipt, useTrip } from "@/store/zustand";
 import { useRouter } from "expo-router";
 
 interface TripModalProps {
@@ -21,7 +21,7 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
     setServerReceipt,
   } = useReceipt();
   const router = useRouter();
-
+  const {token} = useAuth()
   const saved = budget - total;
   const isUnder = saved > 0;
   const percentage = Math.min((total / budget) * 100, 100);
@@ -45,6 +45,7 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
       const response  = await fetch(`${BASE_URL}/api/receipt/save`, {
         method: "post",
         headers: {
+          ...requestHeader(token).headers,
           "Content-Type": "application/json"
         },
         body: JSON.stringify(serverReceipt)

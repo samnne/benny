@@ -18,6 +18,7 @@ import { createUserWithEmailAndPassword } from "firebase/auth";
 import { Image } from "moti";
 import { styled } from "nativewind";
 import bennyHi from "../../../assets/images/benny-hi.png";
+import { useAuth } from "@/store/zustand";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const SafeAreaView = styled(RNSAV);
 
@@ -25,6 +26,7 @@ const CreateAccount = () => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+    const { token, setToken } = useAuth();
 
   async function handleSignUp() {
     try {
@@ -35,6 +37,7 @@ const CreateAccount = () => {
       );
 
       if (user) {
+        setToken(await user.getIdToken())
         router.replace("/home");
       }
     } catch (error) {

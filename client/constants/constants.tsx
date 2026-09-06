@@ -132,8 +132,6 @@ export function getBennyMessage(phase: BennyPhase = "standard"): string {
   return pool[randomIndex];
 }
 
-
-
 export const CATEGORY_ICONS: Record<string, string> = {
   groceries: "cart.fill",
   dining: "fork.knife",
@@ -143,4 +141,12 @@ export const CATEGORY_ICONS: Record<string, string> = {
   shopping: "bag.fill",
   utilities: "bolt.fill",
   other: "square.grid.2x2.fill",
+};
+
+export const requestHeader: (token: string) => RequestInit = (token: string) => {
+  return {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    } 
+  };
 };

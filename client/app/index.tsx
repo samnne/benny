@@ -7,26 +7,30 @@ import { KeyboardAvoidingView, Text, View } from "react-native";
 
 export default function Index() {
   const { token, setToken } = useAuth();
-  const {currentUser} = auth;
+  const { currentUser } = auth;
+  const func = async () => {
+    if (!currentUser) {
+      return;
+    }
+    const response = await currentUser.getIdToken();
+    if (response) {
+      setToken(response);
+    }
+  };
   useFocusEffect(() => {
-    const func = async () => {
-      const response = await fetch(`${BASE_URL}/`, {
-        method: "get",
-      });
-
-      setToken(response.headers.get("X-Request-ID") || "");
-    };
     func();
   });
-  if (currentUser){
-    return <Redirect href={"/home"}  />
+  if (currentUser) {
+    
+    return <Redirect href={"/home"} />;
   }
   return (
     <KeyboardAvoidingView
-    behavior="padding" 
-      className="flex-1 justify-center items-center ">
+      behavior="padding"
+      className="flex-1 justify-center items-center "
+    >
       <Link href={"/(screens)/onboarding/"}>
-        <Text>Edit app/index.tsx to edit this screen. {token}</Text>
+        <Text>Edit app/index.tsx to edit this screen.{token}</Text>
       </Link>
     </KeyboardAvoidingView>
   );

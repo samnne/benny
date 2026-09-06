@@ -61,7 +61,7 @@ const STAGES = [
   },
 ] as const;
 
-async function fakeParseReceipt(receiptBytes: Blob, token: string): Promise<void | null> {
+async function parseReceipt(receiptBytes: Blob, token: string): Promise<void | null> {
   try {
     const response = await fetch(`${BASE_URL}/api/receipt/`, {
       method: "post",
@@ -158,7 +158,7 @@ const ReceiptLoading = () => {
 
     const slowToastTimer = setTimeout(showToast, SLOW_TOAST_AT);
      
-    fakeParseReceipt(blob, token).then((data: any) => {
+    parseReceipt(blob, token).then((data: any) => {
       if (data) {
         const newItems = data.items?.map((item: ReceiptItem) => ({
           ...item, 

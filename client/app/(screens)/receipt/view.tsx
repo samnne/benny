@@ -17,7 +17,7 @@ import { SymbolView } from "expo-symbols";
 import { Pill } from "@/components/UI/Pill";
 import ReceiptViewSkeleton from "@/components/UI/Receipt/ReceiptViewSkeleton";
 import TripModal from "@/components/UI/TripModal";
-import { useBudget, useReceipt, useTrip } from "@/store/zustand";
+import { usePreferences, useReceipt, useTrip } from "@/store/zustand";
 import { useRouter } from "expo-router";
 
 const SafeAreaView = styled(RNSAV);
@@ -28,7 +28,7 @@ const SafeAreaView = styled(RNSAV);
 const ReceiptViewConfirm = () => {
   const { items, updateTotal, total } = useTrip();
   const { serverReceipt, isLoading, updateMerchantName } = useReceipt();
-  const { budget } = useBudget();
+  const { budgetPerPeriod } = usePreferences();
   const [percentage, setPercentage] = useState(0);
 
   const [modalVisible, setModalVisible] = useState(false);
@@ -44,9 +44,9 @@ const ReceiptViewConfirm = () => {
 
   useEffect(() => {
     updateTotal(items);
-    setPercentage((total / budget) * 100);
+    setPercentage((total / budgetPerPeriod) * 100);
     setDisplayedPrice(total);
-  }, [items, updateTotal, budget, total]);
+  }, [items, updateTotal, budgetPerPeriod, total]);
 
   const format = (n: number | null | undefined) =>
     n != null ? n?.toFixed(2) : null;
@@ -108,7 +108,7 @@ const ReceiptViewConfirm = () => {
                   </Text>
                   <Pressable
                     onPress={() => {
-                      setDisplayedPrice((prev) => budget - prev);
+                      setDisplayedPrice((prev) => budgetPerPeriod - prev);
                       setView((prev) => (prev === "left" ? "used" : "left"));
                     }}
                   >
@@ -136,7 +136,7 @@ const ReceiptViewConfirm = () => {
                     $0
                   </Text>
                   <Text className="text-xl p-1 text-primary font-nunito-bold">
-                    ${budget}
+                    ${}
                   </Text>
                 </View>
               </View>
