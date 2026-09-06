@@ -14,8 +14,6 @@ firebase-service-account.json
 # dependencies
 node_modules/
 
-GoogleService-Info.plist
-
 # Expo
 .expo/
 dist/

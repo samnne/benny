@@ -7,12 +7,15 @@
       "env": {
         "EAS_BUILD_BUN_VERSION": "1.4.0"
       },
-      "autoIncrement": true
+      "autoIncrement": true,
+      "developmentClient": true,
+      "environment": "development"
     },
     "production": {
       "ios": {
         "simulator": false
       },
+      "environment": "production",
       "env": {
         "EAS_BUILD_BUN_VERSION": "1.4.0"
       },
