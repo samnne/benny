@@ -1,15 +1,14 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
-import React from "react";
-import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
-import { styled } from "nativewind";
 import Navbar from "@/components/Navigation/Navbar";
-import { ScrollView } from "moti";
-import { SymbolView } from "expo-symbols";
-import { theme } from "@/constants/constants";
 import ReceiptCard from "@/components/UI/Receipt/ReceiptCard";
-import { useRouter } from "expo-router";
-import { useReceipt } from "@/store/zustand";
 import ReceiptCardSkeleton from "@/components/UI/Receipt/ReceiptCardSkeleton";
+import { theme } from "@/constants/constants";
+import { useReceipt } from "@/store/zustand";
+import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { ScrollView } from "moti";
+import { styled } from "nativewind";
+import { Pressable, Text, View } from "react-native";
+import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
 
 const SafeAreaView = styled(RNSAV);
 
@@ -19,7 +18,7 @@ const Reciepts = () => {
   const { receipts, isLoading } = useReceipt();
 
   return (
-    <SafeAreaView>
+    <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />
       <ScrollView contentContainerClassName="p-4 gap-4 pb-40">
         <Pressable

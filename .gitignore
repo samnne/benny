@@ -7,7 +7,9 @@ wheels/
 *.egg-info
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+*.env
 .env*
+firebase-service-account.json
 
 # dependencies
 node_modules/
@@ -17,6 +19,8 @@ node_modules/
 dist/
 web-build/
 expo-env.d.ts
+
+server-python/
 
 # Native
 .kotlin/

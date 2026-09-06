@@ -1,17 +1,29 @@
-import { View, Text, TouchableOpacity } from "react-native";
-import React from "react";
 import { SafeAreaView as RNSAV } from "moti";
 import { styled } from "nativewind";
+import { Text, TouchableOpacity, View } from "react-native";
 
-import { SymbolView } from "expo-symbols";
 import { theme } from "@/constants/constants";
 import { Image } from "expo-image";
+import { SymbolView } from "expo-symbols";
 
+import { useCamera } from "@/store/zustand";
 import { router } from "expo-router";
 const SafeAreaView = styled(RNSAV);
 const Confirm = () => {
+  const { source } = useCamera();
   return (
-    <SafeAreaView className="flex-1 bg-primary/50">
+    <View className="flex-1 bg-black">
+      <View className="flex-1 items-center p-1 justify-center">
+        <Image
+          source={{ uri: source }}
+          style={{
+            width: "100%",
+            height: "100%",
+            borderRadius: 48,
+          }}
+          contentFit="contain"
+        />
+      </View>
       <View className="absolute bg-white bottom-0 w-full h-50 rounded-4xl">
         <View className=" p-4 items-center gap-4 flex-row w-full ">
           <Image
@@ -44,7 +56,7 @@ const Confirm = () => {
           </TouchableOpacity>
         </View>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 

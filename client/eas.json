@@ -1,9 +1,25 @@
 {
-    "build": {
-        "development":{
-            "ios": {
-                "simulator": true
-            }
-        }
+  "build": {
+    "development": {
+      "ios": {
+        "simulator": true
+      },
+      "env": {
+        "EAS_BUILD_BUN_VERSION": "1.4.0"
+      },
+      "autoIncrement": true
+    },
+    "production": {
+      "ios": {
+        "simulator": false
+      },
+      "env": {
+        "EAS_BUILD_BUN_VERSION": "1.4.0"
+      },
+      "autoIncrement": true
     }
+  },
+  "cli": {
+    "appVersionSource": "remote"
+  }
 }

@@ -1,11 +1,17 @@
-import { CameraView, CameraType, useCameraPermissions } from "expo-camera";
-import { Link, useRouter } from "expo-router";
+import { useCamera, useReceipt, useTrip } from "@/store/zustand";
+import { CameraType, CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
+import { Link, useRouter } from "expo-router";
 import { styled } from "nativewind";
 import { useRef, useState } from "react";
-import { Pressable, Text, TouchableOpacity, View } from "react-native";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
-import { useCamera, useReceipt, useTrip } from "@/store/zustand";
 
 const SafeAreaView = styled(RNSAV);
 
@@ -14,7 +20,7 @@ const NewReceipt = () => {
   const cameraRef = useRef<CameraView>(null);
   const [permission, requestPermission] = useCameraPermissions();
   const router = useRouter();
-  const { setSource } = useCamera();
+  const { setSource, setBlob } = useCamera();
   const { reset } = useTrip();
   const { setServerReceipt } = useReceipt();
   // Still loading
@@ -83,16 +89,22 @@ const NewReceipt = () => {
     // Camera Capture Logic Save to Zustand State
     if (cameraRef.current) {
       const options = { quality: 1, base64: true };
-      // const data = await cameraRef.current.takePictureAsync(options);
-      // setSource(data.uri);
-
+      const data = await cameraRef.current.takePictureAsync(options);
+      setSource(data.uri);
+      const blob = await fetch(data.uri).then((res) => res.blob());
+      setBlob(blob);
       router.push("/receipt/confirm");
     }
   }
 
   return (
     <View className="flex-1 justify-center bg-black">
-      <CameraView ref={cameraRef} className="flex-1 " facing={facing} />
+      <CameraView
+        ref={cameraRef}
+        className="flex-1"
+        style={StyleSheet.absoluteFill}
+        facing={facing}
+      />
 
       {/* Controls overlay */}
       <TouchableOpacity

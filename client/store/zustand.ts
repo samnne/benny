@@ -1,3 +1,4 @@
+import { BASE_URL } from "@/constants/constants";
 import { create } from "zustand";
 
 type TripState = {
@@ -17,10 +18,13 @@ function calcTotal(items: ReceiptItem[]): number {
   const itemsSum = items.reduce((acc, cur) => acc + (cur.total_price || 0), 0);
   const tax = receipt?.tax ?? 0;
   const discounts = receipt?.discounts ?? 0; // discounts are positive numbers that reduce total
-  return +(itemsSum + tax - discounts).toFixed(2);
+  return +(itemsSum + tax - discounts)?.toFixed(2);
 }
 
-export const useAuth = create<{ token: string }>((set, get) => ({
+export const useAuth = create<{
+  token: string;
+  setToken: (token: string) => void;
+}>((set, get) => ({
   token: "",
   setToken: (token: string) => set({ token: token }),
 }));
@@ -75,6 +79,7 @@ type ReceiptState = {
   setIsLoading: (v: boolean) => void;
   serverReceipt: Receipt;
   updateMerchantName: (name: string) => void;
+  getReceipts: () => void;
   setServerReceipt: (receipt: Receipt) => void;
 };
 export const useReceipt = create<ReceiptState>((set, get) => {
@@ -84,8 +89,39 @@ export const useReceipt = create<ReceiptState>((set, get) => {
     isLoading: false,
     setIsLoading: (v) => set({ isLoading: v }),
     setServerReceipt: (receipt: Receipt) => set({ serverReceipt: receipt }),
+    getReceipts: async () => {
+      try {
+        const res = await fetch(`${BASE_URL}/api/receipt/`);
+        console.log("res", res);
+        const data = await res.json();
+        for (let obj of data) {
+          const serverItems = obj.items.map(
+            (item: Receipt & { unitPrice: number; totalPrice: number }) => {
+              return {
+                ...item,
+                unit_price: item.unitPrice,
+                total_price: item.totalPrice,
+              };
+            },
+          );
+          get().addReceipt({
+            ...obj,
+            payment_method: obj.paymentMethod,
+            benny_message: obj.bennyMessage,
+            items: [...serverItems],
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching receipts:", error);
+        return get().receipts;
+      }
+    },
     addReceipt: (receipt: Receipt) => {
-      set({ receipts: [...get().receipts, receipt] });
+      const prev = get().receipts;
+      const dup = prev.find((r) => r.id === receipt.id);
+      if (!dup) {
+        set({ receipts: [...get().receipts, receipt] });
+      }
     },
     updateReceipt: (prev: Receipt) => {
       // Actually apply the incoming receipt data
@@ -118,11 +154,15 @@ export const useReceipt = create<ReceiptState>((set, get) => {
 type CameraState = {
   source: string;
   setSource: (source: string) => void;
+  blob: Blob | null;
+  setBlob: (blob: Blob) => void;
 };
 
 export const useCamera = create<CameraState>((set, get) => {
   return {
     source: "#",
     setSource: (source: string) => set({ source }),
+    blob: null,
+    setBlob: (blob: Blob) => set({ blob }),
   };
 });

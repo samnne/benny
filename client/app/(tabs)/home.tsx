@@ -1,100 +1,98 @@
-import {
-  Pressable,
-  Text,
-  View,
-
-} from "react-native";
-import React, { useMemo, useState } from "react";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 import Navbar from "@/components/Navigation/Navbar";
-import { SymbolView } from "expo-symbols";
-import { theme } from "@/constants/constants";
+import { BudgetModal } from "@/components/UI/BudgetModal";
+import { CATEGORY_ICONS, theme } from "@/constants/constants";
+import { useBudget, useReceipt } from "@/store/zustand";
 import { clsx } from "clsx";
-import { StatusBar } from "expo-status-bar";
-import { AnimatedCircularProgress } from "react-native-circular-progress";
+import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { MotiView, ScrollView } from "moti";
 import { MotiPressable } from "moti/interactions";
-import { useRouter } from "expo-router";
-import { useBudget, useReceipt } from "@/store/zustand";
-import { BudgetModal } from "@/components/UI/BudgetModal";
-
-// ─── Budget setter modal ──────────────────────────────────────────────────────
-
-// ─── Category icon map ────────────────────────────────────────────────────────
-const CATEGORY_ICONS: Record<string, string> = {
-  groceries: "cart.fill",
-  dining: "fork.knife",
-  transport: "car.fill",
-  entertainment: "film.fill",
-  health: "heart.fill",
-  shopping: "bag.fill",
-  utilities: "bolt.fill",
-  other: "square.grid.2x2.fill",
-};
+import { styled } from "nativewind";
+import { useEffect, useMemo, useState } from "react";
+import { Pressable, RefreshControl, StatusBar, Text, View } from "react-native";
+import { AnimatedCircularProgress } from "react-native-circular-progress";
+import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
+const SafeAreaView = styled(RNSAV);
 
 // ─── Home ─────────────────────────────────────────────────────────────────────
 const Home = () => {
-  const insets = useSafeAreaInsets();
   const router = useRouter();
-
-  const { budget, setBudget } = useBudget();
-  const { receipts } = useReceipt();
-
+  const { budget } = useBudget();
+  const { receipts, getReceipts } = useReceipt();
   const [toggled, setToggled] = useState(false);
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
-
-  // ✅ Real totals from receipts
+  const [refreshing, setRefreshing] = useState(false);
+  const safeReceipts = receipts || [];
+  const safeBudget = budget || 0;
   const totalSpent = useMemo(
-    () => receipts.reduce((acc, r) => acc + (r.total ?? 0), 0),
-    [receipts],
+    () => safeReceipts.reduce((acc, r) => acc + (Number(r.total) || 0), 0),
+    [safeReceipts],
   );
-  const totalLeft = budget - totalSpent;
-  const budgetPct = Math.min((totalSpent / budget) * 100, 100);
+  const totalLeft = safeBudget - totalSpent;
+  const budgetPct =
+    safeBudget > 0 ? Math.min((totalSpent / safeBudget) * 100, 100) : 0;
   const displayedPrice = toggled ? totalLeft.toFixed(2) : totalSpent.toFixed(2);
-
-  // Placeholder — wire to real pay period when available
-  const timePct = 70;
-
-  const isOverBudget = totalSpent > budget;
+  const timePct = 0;
+  const isOverBudget = totalSpent > safeBudget;
   const onTrackLabel = isOverBudget
     ? "Over Budget"
     : budgetPct < 50
       ? "On Track"
       : "Getting Close";
+  const refreshReceipts = async () => {
+    setRefreshing(true);
+    try {
+      await getReceipts();
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
-  const recentReceipts = receipts.slice(-5).reverse();
+  useEffect(() => {
+    void refreshReceipts();
+  }, []);
 
   const animatePress = useMemo(
     () =>
-      ({ hovered, pressed }: any) => ({
-        opacity: hovered || pressed ? 0.5 : 1,
-        translateY: hovered || pressed ? 10 : 0,
-        scale: hovered || pressed ? 0.8 : 1,
-      }),
+      ({ hovered, pressed }: any) => {
+        "worklet";
+        return {
+          opacity: hovered || pressed ? 0.5 : 1,
+          translateY: hovered || pressed ? 10 : 0,
+          scale: hovered || pressed ? 0.8 : 1,
+        };
+      },
     [],
   );
-
   return (
-    <View className="flex-1" style={{ paddingTop: insets.top }}>
+    <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />
       <ScrollView
         className="flex-1 gap-4 px-4"
         contentContainerClassName="pb-30"
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => void refreshReceipts()}
+            tintColor={theme.colors.primary}
+          />
+        }
       >
         {/* ── Spent / Left toggle ── */}
         <View className="w-full justify-center py-12 gap-2 items-center">
-          {/* ✅ Tap budget to edit it */}
-          <Pressable onPress={() => setBudgetModalVisible(true)}>
-            <Text className="text-lg text-text/50 justify-center items-center">
-              Budget: ${budget.toFixed(2)}{" "}
-              <SymbolView
-                size={12}
-                tintColor={theme.colors.text + "50"}
-                name="pencil"
-              />
+          <Pressable
+            onPress={() => setBudgetModalVisible(true)}
+            className="flex-row items-center gap-1"
+          >
+            <Text className="text-lg text-text/50">
+              Budget: ${safeBudget?.toFixed(2) ?? "0.00"}
             </Text>
+            <SymbolView
+              size={12}
+              tintColor={theme.colors.text + "50"}
+              name="pencil"
+            />
           </Pressable>
-
           <MotiPressable
             onPress={() => setToggled((prev) => !prev)}
             style={{ alignItems: "center", justifyContent: "center" }}
@@ -103,7 +101,6 @@ const Home = () => {
             transition={{ type: "spring", damping: 50, stiffness: 400 }}
           >
             <MotiView
-              key={displayedPrice}
               from={{ opacity: 0, translateY: 10, scale: 0.8 }}
               animate={{ opacity: 1, translateY: 0, scale: 1 }}
               transition={{ type: "spring", damping: 50, stiffness: 400 }}
@@ -132,45 +129,41 @@ const Home = () => {
 
         {/* ── Gauges ── */}
         <View className="gap-4 justify-center items-center p-4 border-pill/20 rounded-3xl">
-          <View className="relative justify-center items-center">
-            <AnimatedCircularProgress
-              size={200}
-              style={{ height: 120, paddingTop: 20 }}
-              width={15}
-              fill={10}
-              rotation={270}
-              arcSweepAngle={180}
-              lineCap="round"
-              tintColor={theme.colors.primary}
-              backgroundColor={theme.colors.primary + "50"}
-            >
-              {(fill: number) => (
-                <View className="w-full justify-center items-center">
-                  <Text className="text-4xl font-bold text-primary text-center">
-                    {fill.toFixed(1)}%
-                  </Text>
-                  <Text className="text-sm text-pill/50">Time Elapsed</Text>
-                </View>
-              )}
-            </AnimatedCircularProgress>
+          <View className="relative justify-center items-center"></View>
+          <AnimatedCircularProgress
+            size={200}
+            style={{ height: 120, paddingTop: 0 }}
+            width={15}
+            fill={timePct} // <-- was fill={80}
+            rotation={270}
+            arcSweepAngle={180}
+            lineCap="round"
+            tintColor={theme.colors.primary}
+            backgroundColor={theme.colors.primary + "50"}
+          >
+            {(fill: number) => (
+              <View className="w-full justify-center items-center">
+                <Text className="text-4xl font-bold text-primary text-center">
+                  {fill.toFixed(1)}%
+                </Text>
+                <Text className="text-sm text-pill/50">Time Elapsed</Text>
+              </View>
+            )}
+          </AnimatedCircularProgress>
 
-            <AnimatedCircularProgress
-              size={250}
-              style={{ height: 150, position: "absolute", top: 0 }}
-              width={15}
-              fill={budgetPct}
-              rotation={270}
-              arcSweepAngle={180}
-              lineCap="round"
-              tintColor={
-                isOverBudget ? theme.colors.secondary : theme.colors.secondary
-              }
-              backgroundColor={theme.colors.secondary + "50"}
-            >
-              {() => <View />}
-            </AnimatedCircularProgress>
-          </View>
-
+          <AnimatedCircularProgress
+            size={250}
+            style={{ height: 150, position: "absolute", top: 0 }}
+            width={15}
+            fill={budgetPct} // <-- was fill={80}
+            rotation={270}
+            arcSweepAngle={180}
+            lineCap="round"
+            tintColor={theme.colors.secondary}
+            backgroundColor={theme.colors.secondary + "50"}
+          >
+            {() => <View />}
+          </AnimatedCircularProgress>
           <View
             className={clsx(
               "p-2 rounded-full px-4",
@@ -227,7 +220,7 @@ const Home = () => {
         <View className="gap-4 justify-center w-full px-2 border-pill/20 rounded-3xl">
           <Text className="text-4xl font-nunito-black">Receipt Overview</Text>
 
-          {recentReceipts.length === 0 ? (
+          {receipts.length === 0 ? (
             <View className="items-center py-8 gap-2 border-2 border-dashed border-primary/20 rounded-2xl">
               <SymbolView
                 name="receipt"
@@ -242,7 +235,7 @@ const Home = () => {
               showsHorizontalScrollIndicator={false}
               className="flex-1 flex-row"
             >
-              {recentReceipts.map((receipt) => (
+              {receipts.map((receipt) => (
                 <Pressable
                   key={receipt.id}
                   onPress={() => router.push("/receipts")}
@@ -295,8 +288,8 @@ const Home = () => {
         visible={budgetModalVisible}
         onClose={() => setBudgetModalVisible(false)}
       />
-      <StatusBar style="dark" />
-    </View>
+      <StatusBar barStyle={"dark-content"} />
+    </SafeAreaView>
   );
 };
 

@@ -3,7 +3,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { BASE_URL, theme } from "@/constants/constants";
-import { useAuth, useReceipt, useTrip } from "@/store/zustand";
+import { useAuth, useCamera, useReceipt, useTrip } from "@/store/zustand";
 import { randomUUID } from "expo-crypto";
 
 const MAX_DURATION = 5000;
@@ -61,17 +61,18 @@ const STAGES = [
   },
 ] as const;
 
-async function fakeParseReceipt(token: string): Promise<void | null> {
+async function fakeParseReceipt(receiptBytes: Blob, token: string): Promise<void | null> {
   try {
-    console.log(token)
     const response = await fetch(`${BASE_URL}/api/receipt/`, {
-      method: "get",
+      method: "post",
       headers: {
         Authorization: `Bearer ${token}`,
+        "Content-Type": "application/octet-stream"
       },
-    }).then((res) => res.json());
-    if (!response?.success) return new Promise((res) => res(response));
-    return new Promise((res) => res(response.data));
+      body: receiptBytes 
+    }).then((res) => res.text());
+      const responseJson = JSON.parse(response);
+      return responseJson;
   } catch (error) {
     console.log(error);
     return new Promise((res) => res(null));
@@ -88,6 +89,7 @@ const ReceiptLoading = () => {
   const isDone = useRef(false);
   const { setItems, setTotal } = useTrip();
   const { token } = useAuth();
+  const {blob} = useCamera()
   const { addReceipt, setServerReceipt, setIsLoading } = useReceipt();
   const stage = STAGES[stageIndex];
 
@@ -132,11 +134,13 @@ const ReceiptLoading = () => {
       useNativeDriver: false,
     }).start();
   };
+  useEffect(()=>{
 
+    setServerReceipt({})
+  }, [])
   useEffect(() => {
     // Mark global loading as true when scan starts
     setIsLoading(true);
-
     Animated.loop(
       Animated.timing(spinAnim, {
         toValue: 1,
@@ -153,18 +157,16 @@ const ReceiptLoading = () => {
     const maxTimer = setTimeout(navigateAway, MAX_DURATION);
 
     const slowToastTimer = setTimeout(showToast, SLOW_TOAST_AT);
-
-    fakeParseReceipt(token).then((data: any) => {
+     
+    fakeParseReceipt(blob, token).then((data: any) => {
       if (data) {
-        const rid = randomUUID();
         const newItems = data.items?.map((item: ReceiptItem) => ({
-          ...item,
-          id: randomUUID(),
+          ...item, 
+          id: randomUUID()
         }));
         setTotal(data.total);
         setItems(newItems);
-        const receipt = { ...data, items: newItems, id: rid };
-        addReceipt(receipt);
+        const receipt = { ...data, items: newItems };
         setServerReceipt(receipt);
       }
       stageTimers.forEach(clearTimeout);

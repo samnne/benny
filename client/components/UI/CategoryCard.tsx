@@ -1,7 +1,6 @@
-import { View, Text } from "react-native";
-import React from "react";
-import { SymbolView } from "expo-symbols";
 import { theme } from "@/constants/constants";
+import { SymbolView } from "expo-symbols";
+import { Text, View } from "react-native";
 
 type Category = {
   id: number;
@@ -18,7 +17,6 @@ const CategoryCard = ({ cat }: { cat: Category }) => {
 
   return (
     <View className="bg-white rounded-2xl p-4 gap-4 shadow-sm w-full">
-      
       {/* Header Row */}
       <View className="flex-row items-center gap-3">
         <View className="bg-primary/10 rounded-xl p-3">
@@ -44,7 +42,9 @@ const CategoryCard = ({ cat }: { cat: Category }) => {
           <View key={i} className="gap-2">
             <View className="flex-row justify-between items-center">
               <Text className="text-base font-bold text-text">{sub.name}</Text>
-              <Text className="text-base font-bold text-text">${sub.spent}</Text>
+              <Text className="text-base font-bold text-text">
+                ${sub.spent}
+              </Text>
             </View>
 
             {/* Progress Bar */}

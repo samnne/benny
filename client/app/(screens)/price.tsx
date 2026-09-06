@@ -1,14 +1,14 @@
-import { View, FlatList, Pressable } from "react-native";
-import React, { useMemo, useState } from "react";
-import { randomUUID } from "expo-crypto";
-import { AnimatePresence, MotiView, SafeAreaView as RNSAV, Text } from "moti";
-import { styled } from "nativewind";
-import { MotiPressable } from "moti/interactions";
-import { SymbolView } from "expo-symbols";
 import { theme } from "@/constants/constants";
-import { useRouter } from "expo-router";
 import { playHaptic } from "@/constants/functions";
 import { useTrip } from "@/store/zustand";
+import { randomUUID } from "expo-crypto";
+import { useRouter } from "expo-router";
+import { SymbolView } from "expo-symbols";
+import { AnimatePresence, MotiView, SafeAreaView as RNSAV, Text } from "moti";
+import { MotiPressable } from "moti/interactions";
+import { styled } from "nativewind";
+import { useMemo, useState } from "react";
+import { FlatList, Pressable, View } from "react-native";
 
 const SafeAreaView = styled(RNSAV);
 const numberPad = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "x"];
@@ -184,7 +184,7 @@ const Price = () => {
           onPress={() => {
             playHaptic();
             if (router.canGoBack()) {
-              handleAddItem("", Number.parseFloat(price))
+              handleAddItem("", Number.parseFloat(price));
               router.back();
             }
           }}

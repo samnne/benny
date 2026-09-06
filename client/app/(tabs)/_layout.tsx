@@ -1,28 +1,41 @@
-import React from "react";
-
-import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { theme } from "@/constants/constants";
-import { View } from "react-native";
-import { StatusBar } from "expo-status-bar";
+import { NativeTabs } from "expo-router/unstable-native-tabs";
 
 const TabsLayout = () => {
   return (
     <NativeTabs labelVisibilityMode="unlabeled">
       <NativeTabs.Trigger name="home">
-        <Label hidden />
-        <Icon selectedColor={theme.colors.primary} sf="house.fill" />
+        <NativeTabs.Trigger.Label hidden />
+        <NativeTabs.Trigger.Icon
+          selectedColor={theme.colors.primary}
+          sf="house.fill"
+        />
       </NativeTabs.Trigger>
       <NativeTabs.Trigger name="receipts">
-        <Label hidden />
+        <NativeTabs.Trigger.Label hidden />
 
-        <Icon selectedColor={theme.colors.primary} sf="receipt" />
+        <NativeTabs.Trigger.Icon
+          selectedColor={theme.colors.primary}
+          sf="receipt"
+        />
       </NativeTabs.Trigger>
+      <NativeTabs.Trigger name="analytics">
+        <NativeTabs.Trigger.Label hidden />
+
+        <NativeTabs.Trigger.Icon
+          selectedColor={theme.colors.primary}
+          sf="chart.bar"
+        />
+      </NativeTabs.Trigger>
+
       <NativeTabs.Trigger name="settings">
-        <Label hidden />
+        <NativeTabs.Trigger.Label hidden />
 
-        <Icon selectedColor={theme.colors.primary} sf="gear" />
+        <NativeTabs.Trigger.Icon
+          selectedColor={theme.colors.primary}
+          sf="gear"
+        />
       </NativeTabs.Trigger>
-      
     </NativeTabs>
   );
 };

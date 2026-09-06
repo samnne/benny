@@ -1,38 +1,36 @@
 // ReceiptViewConfirm.tsx
 
-import {
-  Pressable,
-  Text,
-  ScrollView as RNScrollView,
-  TextInput,
-} from "react-native";
-import React, { useEffect, useState } from "react";
 import { SafeAreaView as RNSAV, ScrollView, View } from "moti";
 import { styled } from "nativewind";
+import { useEffect, useState } from "react";
+import {
+  Pressable,
+  ScrollView as RNScrollView,
+  Text,
+  TextInput,
+} from "react-native";
 
 import ItemSlot from "@/components/UI/ItemSlot";
-import { SymbolView } from "expo-symbols";
 import { CATEGORY_ICONS, theme } from "@/constants/constants";
+import { SymbolView } from "expo-symbols";
 
-import { useRouter } from "expo-router";
-import { useBudget, useReceipt, useTrip } from "@/store/zustand";
-import TripModal from "@/components/UI/TripModal";
-import ReceiptViewSkeleton from "@/components/UI/Receipt/ReceiptViewSkeleton";
 import { Pill } from "@/components/UI/Pill";
+import ReceiptViewSkeleton from "@/components/UI/Receipt/ReceiptViewSkeleton";
+import TripModal from "@/components/UI/TripModal";
+import { useBudget, useReceipt, useTrip } from "@/store/zustand";
+import { useRouter } from "expo-router";
 
 const SafeAreaView = styled(RNSAV);
 
 // ─── Category label map ───────────────────────────────────────────────────────
 
-
 // ─── Main screen ──────────────────────────────────────────────────────────────
 const ReceiptViewConfirm = () => {
   const { items, updateTotal, total } = useTrip();
-  const { serverReceipt, isLoading, updateMerchantName } =
-    useReceipt();
+  const { serverReceipt, isLoading, updateMerchantName } = useReceipt();
   const { budget } = useBudget();
   const [percentage, setPercentage] = useState(0);
- 
+
   const [modalVisible, setModalVisible] = useState(false);
   const [displayedPrice, setDisplayedPrice] = useState(total);
   const [view, setView] = useState<"left" | "used">("used");
@@ -46,17 +44,17 @@ const ReceiptViewConfirm = () => {
 
   useEffect(() => {
     updateTotal(items);
-    setPercentage(((total) / budget) * 100);
+    setPercentage((total / budget) * 100);
     setDisplayedPrice(total);
   }, [items, updateTotal, budget, total]);
 
   const format = (n: number | null | undefined) =>
-    n != null ? n.toFixed(2) : null;
+    n != null ? n?.toFixed(2) : null;
 
   return (
     <>
       <SafeAreaView className="flex-1">
-        <ScrollView className="flex-1">
+        <ScrollView className="flex-1 ">
           {isLoading && items.length === 0 ? (
             <ReceiptViewSkeleton />
           ) : (
@@ -79,7 +77,7 @@ const ReceiptViewConfirm = () => {
                   }}
                   placeholder="Store name"
                   placeholderTextColor={theme.colors.primary + "40"}
-                  className="text-6xl font-fredoka-semibold w-full leading-none"
+                  className="text-6xl font-fredoka-semibold w-full leading-5"
                 />
 
                 {/*  Address under store name */}
@@ -119,7 +117,7 @@ const ReceiptViewConfirm = () => {
                         view === "left" ? "text-secondary" : "text-primary"
                       }`}
                     >
-                      {displayedPrice.toFixed(2)}
+                      {displayedPrice?.toFixed(2)}
                     </Text>
                   </Pressable>
                 </View>
@@ -206,7 +204,7 @@ const ReceiptViewConfirm = () => {
               </RNScrollView>
 
               {/* ── ITEMS ── */}
-              <View className="gap-4">
+              <View className="gap-4 pb-100">
                 <Text className="text-4xl font-fredoka tracking-wide">
                   List
                 </Text>

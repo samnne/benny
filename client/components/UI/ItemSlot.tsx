@@ -1,9 +1,9 @@
-import { View, Text, Pressable } from "react-native";
-import React, {  useState } from "react";
 import { SymbolView } from "expo-symbols";
+import { useState } from "react";
+import { Pressable, Text, View } from "react-native";
 
 import { theme } from "@/constants/constants";
-import {  useTrip } from "@/store/zustand";
+import { useTrip } from "@/store/zustand";
 
 import { TextInput } from "react-native-gesture-handler";
 const ItemSlot = ({ item }: { item: ReceiptItem }) => {
@@ -19,13 +19,11 @@ const ItemSlot = ({ item }: { item: ReceiptItem }) => {
       setPrice(text);
       updateItem({ ...liveItem, total_price: parsed });
     } else {
-   
       const safeName = text.trim() || `Item ${items.indexOf(liveItem) + 1}`;
       setName(text); // keep raw text while typing
       updateItem({ ...liveItem, name: safeName });
     }
   }
-
 
   function handleNameBlur() {
     if (!name.trim()) {
@@ -57,7 +55,7 @@ const ItemSlot = ({ item }: { item: ReceiptItem }) => {
         <TextInput
           value={price}
           onChangeText={(text) => handleChange(text, "price")}
-          keyboardType="decimal-pad"
+          keyboardType="numbers-and-punctuation"
           className="text-2xl font-fredoka-semibold w-1/2 leading-none text-primary"
           placeholder="0.00"
           placeholderTextColor={theme.colors.primary + "40"}

@@ -1,19 +1,18 @@
-import { View, Text, Pressable } from "react-native";
-import React from "react";
 import { Image, SafeAreaView as RNSAV } from "moti";
 import { styled } from "nativewind";
+import { Pressable, Text, View } from "react-native";
 
+import { useButtonAnimation } from "@/hooks/useButtonAnimation";
+import { router } from "expo-router";
+import Animated from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import benny from "../../../assets/images/benny_head.png";
-import { router } from "expo-router";
-import { useButtonAnimation } from "@/hooks/useButtonAnimation";
-import Animated from "react-native-reanimated";
 const SafeAreaView = styled(RNSAV);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const OnboardingIndex = () => {
   const insets = useSafeAreaInsets();
-  const button = useButtonAnimation()
+  const button = useButtonAnimation();
   return (
     <View className="flex-1 justify-center items-center bg-primary">
       <View className="h-80 w-60">

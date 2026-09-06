@@ -199,7 +199,7 @@ const ReceiptCard = ({ receipt }: { receipt: Receipt }) => {
                 </Text>
               </View>
               <Text className="text-3xl pt-2 font-bold font-nunito-extrabold">
-                ${receipt?.total.toFixed(2)}
+                ${receipt?.total?.toFixed(2)}
               </Text>
             </View>
 
@@ -217,7 +217,7 @@ const ReceiptCard = ({ receipt }: { receipt: Receipt }) => {
                       {item?.name ?? "Item"}
                     </Text>
                     <Text className="text-3xl font-nunito">
-                      ${item.total_price.toFixed(2)}
+                      ${item.total_price?.toFixed(2)}
                     </Text>
                   </View>
                 ))}

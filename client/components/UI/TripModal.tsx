@@ -1,10 +1,9 @@
 import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { getBennyMessage, theme } from "@/constants/constants";
+import { BASE_URL, getBennyMessage, theme } from "@/constants/constants";
 import { useBudget, useReceipt, useTrip } from "@/store/zustand";
 import { useRouter } from "expo-router";
-import { randomUUID } from "expo-crypto";
 
 interface TripModalProps {
   modalVisible: boolean;
@@ -27,23 +26,34 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
   const isUnder = saved > 0;
   const percentage = Math.min((total / budget) * 100, 100);
 
-  const handleDone = () => {
+  const handleDone = async () => {
     setModalVisible(false);
     const newItems = items.map((item, i) => ({
       ...item,
       name: item.name ?? `Item ${i}`,
     }));
     const newReceipt: Receipt = {
+
       ...serverReceipt,
       items: newItems,
       benny_message: getBennyMessage("standard"),
 
-      total: total || +serverReceipt.total.toFixed(2),
+      total: total || +serverReceipt.total?.toFixed(2),
     };
     if (!serverReceipt.id) {
-      addReceipt({ ...newReceipt, id: randomUUID() });
+      console.log("hey")
+      const response  = await fetch(`${BASE_URL}/api/receipt/save`, {
+        method: "post",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(serverReceipt)
+      })
+      const data = await response.json()
+      addReceipt({ ...data });
     } else {
-      updateReceipt({ ...newReceipt, total });
+      console.log("heyyyy")
+      // updateReceipt({ ...newReceipt, total });
     }
     setServerReceipt({});
 
@@ -86,7 +96,7 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
               This is what you saved!
             </Text>
             <Text className="text-5xl font-fredoka-semibold text-black leading-tight">
-              ${Math.abs(saved).toFixed(2)}
+              ${Math.abs(saved)?.toFixed(2)}
             </Text>
             <Text className="text-sm font-nunito text-black/40 mt-1 mb-6">
               {isUnder ? "under budget this trip" : "over budget this trip"}
