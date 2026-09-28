@@ -3,7 +3,7 @@ import { BudgetModal } from "@/components/UI/BudgetModal";
 import { auth } from "@/config/firebase";
 import { CATEGORY_ICONS, theme } from "@/constants/constants";
 import { getDaysUntil } from "@/constants/functions";
-import { useAuth, useBudget, usePreferences, useReceipt } from "@/store/zustand";
+import { useAuth, usePreferences, useReceipt } from "@/store/zustand";
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
@@ -20,13 +20,12 @@ const SafeAreaView = styled(RNSAV);
 const Home = () => {
   const router = useRouter();
 
-  const {token, setToken} = useAuth()
+  const { token, setToken } = useAuth();
   const { receipts, getReceipts } = useReceipt();
   const [toggled, setToggled] = useState(false);
-  const {budgetPerPeriod, nextPayday} = usePreferences()
+  const { budgetPerPeriod, nextPayday } = usePreferences();
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
 
   const { currentUser } = auth;
   const refreshReceipts = async () => {
@@ -35,7 +34,7 @@ const Home = () => {
       console.warn("No user ready yet, skipping fetch.");
       return;
     }
-    if (!token){
+    if (!token) {
       const tk = await currentUser.getIdToken();
       setToken(tk);
     }
@@ -84,7 +83,6 @@ const Home = () => {
       },
     [],
   );
-  
 
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
@@ -266,7 +264,7 @@ const Home = () => {
                   <View className="flex-row items-center gap-2">
                     <View className="flex-row justify-center items-center bg-primary/20 rounded-full p-2">
                       <SymbolView
-                      // @ts-ignore
+                        // @ts-ignore
                         name={CATEGORY_ICONS[receipt.category] ?? "cart.fill"}
                         tintColor={theme.colors.primary}
                       />

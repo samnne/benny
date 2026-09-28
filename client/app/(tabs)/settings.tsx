@@ -7,8 +7,8 @@ import { auth } from "@/config/firebase";
 import { usePreferences } from "@/store/zustand";
 import { router } from "expo-router";
 
-import { styled } from "nativewind";
 import * as Application from "expo-application";
+import { styled } from "nativewind";
 import { Alert, ScrollView, Text, View } from "react-native";
 import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
 
@@ -37,7 +37,7 @@ const Settings = () => {
   const paydayLabel = nextPayday
     ? `${PAY_FREQUENCY_LABELS[payFrequency]} · Next Payday ${new Date(`${nextPayday}T00:00:00`).toDateString()}`
     : PAY_FREQUENCY_LABELS[payFrequency];
-  
+
   const handleSignOut = () => {
     auth.signOut();
     router.replace("/(screens)/onboarding");
@@ -144,6 +144,11 @@ const Settings = () => {
             sublabel="The morning your pay lands"
             value={notifications.paydayReminder}
             onChange={(v) => setNotifications({ paydayReminder: v })}
+          />
+          <Row
+            icon=""
+            label="Hanlde Notifications"
+            onPress={() => router.push("/(screens)/(notis)/notification")}
           />
         </Section>
 

@@ -61,6 +61,11 @@
 			<artifactId>spring-cloud-gcp-starter-data-firestore</artifactId>
 			<version>1.2.8.RELEASE</version>
 		</dependency>
+		<dependency>
+			<groupId>io.github.hlspablo</groupId>
+			<artifactId>expo-server-sdk-java</artifactId>
+			<version>3.1.6</version>
+		</dependency>
 	</dependencies>
 
 	<build>

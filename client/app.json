@@ -20,9 +20,7 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "platforms": [
-      "ios"
-    ],
+    "platforms": ["ios"],
     "plugins": [
       "expo-router",
       [
@@ -87,7 +85,8 @@
       "expo-apple-authentication",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

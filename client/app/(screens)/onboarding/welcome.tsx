@@ -2,7 +2,6 @@ import { appleProvider, auth } from "@/config/firebase";
 import { theme } from "@/constants/constants";
 import { useButtonAnimation } from "@/hooks/useButtonAnimation";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
-import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Image, SafeAreaView as RNSAV, View } from "moti";
 import { styled } from "nativewind";
@@ -13,6 +12,7 @@ import bennyHi from "../../../assets/images/benny-hi.png";
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
 import { signInWithCredential } from "@firebase/auth";
 import * as AppleAuthentication from "expo-apple-authentication";
+import { router } from "expo-router";
 const SafeAreaView = styled(RNSAV);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -48,6 +48,9 @@ const Register = () => {
 
       const { user } = await signInWithCredential(auth, authCredential);
       console.log("Apple Sign-In successful, user:", user);
+      if (user) {
+        router.push("/home");
+      }
     } catch (error: Error | any) {
       if (error.code === "ERR_CANCELED") {
         // Handle that the user canceled the sign-in flow
