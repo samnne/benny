@@ -17,14 +17,13 @@ const Reciepts = () => {
   const router = useRouter();
 
   const { receipts, isLoading, getReceipts, deleteReceipt } = useReceipt();
-  useEffect(()=> {
+  useEffect(() => {
     try {
-      
       void getReceipts();
     } catch (error) {
-      console.log(error)
+      console.log(error);
     }
-  }, [])
+  }, []);
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />
