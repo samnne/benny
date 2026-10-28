@@ -64,10 +64,7 @@ const Price = () => {
       default:
         if (price.includes(decimal) && price.split(decimal)[0].length >= 8) {
           break;
-        } else if (
-          price.includes(decimal) &&
-          price.split(decimal)[1].length >= 2
-        ) {
+        } else if (price.includes(decimal) && price.split(decimal)[1].length >= 2) {
           break;
         }
         if (price.length >= 8) {
@@ -97,12 +94,12 @@ const Price = () => {
   }
   return (
     <SafeAreaView className="flex-1 bg-primary p-4   justify-center items-center ">
-      <Pressable
-        onPress={() => router.back()}
-        className="absolute right-10 top-20"
-      >
+      <Pressable onPress={() => router.back()} className="absolute right-10 top-20">
         <SymbolView name="multiply" tintColor={theme.colors.background} />
       </Pressable>
+      <View className="w-full justify-center items-center">
+        <Text>Item Name</Text>
+      </View>
       <View className="flex-1 flex-row w-full justify-center items-center">
         <Text className="text-3xl font-bold  text-white">$</Text>
         <MotiView className="flex-row transition-all will-change-animation">
@@ -162,11 +159,7 @@ const Price = () => {
               {item !== "x" ? (
                 <Text className="text-white text-4xl">{item}</Text>
               ) : (
-                <SymbolView
-                  name="delete.left"
-                  size={40}
-                  tintColor={theme.colors.background}
-                />
+                <SymbolView name="delete.left" size={40} tintColor={theme.colors.background} />
               )}
             </MotiPressable>
           );
@@ -190,9 +183,7 @@ const Price = () => {
           }}
           animate={continueAnimation}
         >
-          <Text className="text-3xl text-white text-center font-bold">
-            Continue
-          </Text>
+          <Text className="text-3xl text-white text-center font-bold">Continue</Text>
         </MotiPressable>
       </View>
     </SafeAreaView>

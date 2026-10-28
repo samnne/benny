@@ -24,7 +24,7 @@ public class FirebaseConfig {
 
     @Bean
     public Firestore firestore() throws IOException {
-
+      
         try (InputStream serviceAccount = new FileInputStream(credentialsPath)) {
             HttpTransport httpTransport = new NetHttpTransport();
             FirebaseOptions options = FirebaseOptions.builder()

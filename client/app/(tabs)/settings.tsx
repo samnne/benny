@@ -53,7 +53,7 @@ const Settings = () => {
       "Mock action: your account and data would be permanently deleted.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => {} },
+        { text: "Delete", style: "destructive", onPress: () => { } },
       ],
     );
   };
@@ -80,18 +80,18 @@ const Settings = () => {
             icon="person-outline"
             label="Name"
             sublabel={currentUser?.displayName ?? "—"}
-            onPress={() => {}}
+            onPress={() => { }}
           />
           <Row
             icon="mail-outline"
             label="Email"
             sublabel={currentUser?.email ?? "—"}
-            onPress={() => {}}
+            onPress={() => { }}
           />
           <Row
             icon="lock-closed-outline"
             label="Change password"
-            onPress={() => {}}
+            onPress={() => { }}
           />
           <Row
             icon="log-out-outline"
@@ -108,6 +108,7 @@ const Settings = () => {
             sublabel={paydayLabel}
             onPress={() => router.push("/(screens)/onboarding/pay-period")}
           />
+          <Row icon="cash-outline" label="Log a paycheck" onPress={() => router.push("/(screens)/payday/payday")} />
         </Section>
 
         <Section title="Spending Goal">
@@ -176,14 +177,14 @@ const Settings = () => {
           <Row
             icon="document-text-outline"
             label="Privacy policy"
-            onPress={() => {}}
+            onPress={() => { }}
           />
           <Row
             icon="reader-outline"
             label="Terms of service"
-            onPress={() => {}}
+            onPress={() => { }}
           />
-          <Row icon="star-outline" label="Rate Benny" onPress={() => {}} />
+          <Row icon="star-outline" label="Rate Benny" onPress={() => { }} />
         </Section>
       </ScrollView>
     </SafeAreaView>

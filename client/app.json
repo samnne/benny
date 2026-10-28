@@ -20,7 +20,9 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "platforms": ["ios"],
+    "platforms": [
+      "ios"
+    ],
     "plugins": [
       "expo-router",
       [
@@ -86,7 +88,8 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
-      "expo-notifications"
+      "expo-notifications",
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

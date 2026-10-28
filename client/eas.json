@@ -2,11 +2,14 @@
   "build": {
     "development": {
       "ios": {
-        "simulator": true
+        "simulator": false
       },
       "env": {
         "EAS_BUILD_BUN_VERSION": "1.4.0"
       },
+     
+      "distribution": "internal",
+      
       "autoIncrement": true,
       "developmentClient": true,
       "environment": "development"

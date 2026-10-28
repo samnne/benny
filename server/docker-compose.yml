@@ -1,4 +1,4 @@
-name: benny-mono
+name: benny
 services:
   backend:
     build: .
@@ -8,4 +8,6 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     volumes:
-      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/secrets/firebase-service-account.json:ro
+      - ${GOOGLE_APPLICATION_CREDENTIALS}:/app/src/main/resources/firebase_sa.json:ro
+    env_file:
+      - .env.properties

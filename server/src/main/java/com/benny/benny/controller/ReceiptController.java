@@ -28,10 +28,9 @@ public class ReceiptController {
   private final GeminiService geminiService;
 
   public ReceiptController(
-    ReceiptService receiptService,
-    ReceiptMapper receiptMapper,
-    GeminiService geminiService
-  ) {
+      ReceiptService receiptService,
+      ReceiptMapper receiptMapper,
+      GeminiService geminiService) {
     this.receiptService = receiptService;
     this.receiptMapper = receiptMapper;
     this.geminiService = geminiService;
@@ -39,17 +38,15 @@ public class ReceiptController {
 
   @GetMapping("/")
   public ResponseEntity<List<ReceiptDocument>> getMethodName(
-    @RequestAttribute("uid") String uid
-  ) {
+      @RequestAttribute("uid") String uid) {
     List<ReceiptDocument> document = receiptService.getReceipts(uid);
     return ResponseEntity.ok(document);
   }
 
   @PostMapping("/")
   public ResponseEntity<String> receiptRequest(
-    @RequestBody byte[] bytes,
-    @RequestAttribute("uid") String uid
-  ) {
+      @RequestBody byte[] bytes,
+      @RequestAttribute("uid") String uid) {
     try {
       System.out.println(bytes);
       String response = geminiService.sendResponse(bytes);
@@ -59,8 +56,7 @@ public class ReceiptController {
       e.printStackTrace();
       Dotenv dotenv = Dotenv.load();
       String production = dotenv.get("SPRING_ENV");
-      String response =
-        "Sorry We ran into an error" + e.getMessage() + production == "true"
+      String response = "Sorry We ran into an error" + e.getMessage() + production == "true"
           ? e.getStackTrace().toString()
           : "";
       return ResponseEntity.internalServerError().body(response);
@@ -69,28 +65,23 @@ public class ReceiptController {
 
   @PostMapping("/save")
   public ResponseEntity<ReceiptDto> saveReceipt(
-    @RequestBody ReceiptDto createReceiptDto,
-    @RequestAttribute("uid") String uid
-  ) {
+      @RequestBody ReceiptDto createReceiptDto,
+      @RequestAttribute("uid") String uid) {
     System.out.println("Saving Receipt");
     CreateReceiptDocument createReceiptDocumentRequest = receiptMapper.fromDto(
-      createReceiptDto
-    );
+        createReceiptDto);
     ReceiptDocument receiptDocument = receiptService.saveReceipt(
-      createReceiptDocumentRequest,
-      uid
-    );
+        createReceiptDocumentRequest,
+        uid);
     ReceiptDto receiptDto = receiptMapper.toDto(receiptDocument);
-
 
     return new ResponseEntity<>(receiptDto, HttpStatus.CREATED);
   }
 
   @DeleteMapping("/")
   public ResponseEntity<ReceiptDto> deleteReceipt(
-    @RequestParam String receiptId,
-    @RequestAttribute("uid") String uid
-  ) {
+      @RequestParam String receiptId,
+      @RequestAttribute("uid") String uid) {
     System.out.println(receiptId);
     ReceiptDocument deletedDoc = receiptService.deleteReceipt(receiptId, uid);
     ReceiptDto receiptDto = receiptMapper.toDto(deletedDoc);
