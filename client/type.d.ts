@@ -3,6 +3,11 @@ declare module "*.png" {
   export default src;
 }
 
+declare module "*.tflite" {
+  const src: number;
+  export default src;
+}
+
 type ReceiptCategory =
   | "groceries"
   | "dining"

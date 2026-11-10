@@ -87,6 +87,7 @@ const Home = () => {
       },
     [],
   );
+  console.log(BASE_URL)
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />

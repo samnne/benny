@@ -5,7 +5,10 @@ const { withNativewind } = require("nativewind/metro");
 const config = getDefaultConfig(__dirname);
 config.resolver.sourceExts.push("cjs");
 
+config.resolver.assetExts.push("tflite");
+
 const finalConfig = withNativewind(config);
+finalConfig.resolver.assetExts.push("tflite");
 const prev = finalConfig.resolver.resolveRequest;
 const realReactNative = path.join(
   path.dirname(require.resolve("react-native/package.json")),
@@ -20,5 +23,7 @@ finalConfig.resolver.resolveRequest = (context, moduleName, platform) => {
   }
   return (prev ?? context.resolveRequest)(context, moduleName, platform);
 };
+
+config.resolver.assetExts.push('tflite');
 
 module.exports = finalConfig;

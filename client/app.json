@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icons/ios-light.png",
     "scheme": "benny",
+    
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.samuelechefu.benny",
@@ -92,7 +93,8 @@
       "expo-notifications",
       "@react-native-community/datetimepicker",
       "expo-asset",
-      "expo-sharing"
+      "expo-sharing",
+      "react-native-fast-tflite"
     ],
     "experiments": {
       "typedRoutes": true,

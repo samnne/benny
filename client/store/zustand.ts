@@ -58,17 +58,7 @@ export const useTrip = create<TripState>((set, get) => ({
   reset: () => set({ items: [], total: 0 }),
 }));
 
-type BudgetState = {
-  budget: number;
-  setBudget: (budget: number) => void;
-};
 
-export const useBudget = create<BudgetState>((set, get) => {
-  return {
-    budget: 120,
-    setBudget: (budget) => set({ budget }),
-  };
-});
 
 type ReceiptState = {
   receipts: Receipt[];
@@ -258,3 +248,14 @@ export const usePreferences = create<PreferencesState>((set, get) => ({
   setOnboardingComplete: (v) => set({ onboardingComplete: v }),
   reset: () => set(defaultPreferences),
 }));
+type BudgetState = {
+  budget: number;
+  setBudget: (budget: number) => void;
+};
+
+export const useBudget = create<BudgetState>((set, get) => {
+  return {
+    budget: usePreferences().budgetPerPeriod,
+    setBudget: (budget) => set({ budget }),
+  };
+});
