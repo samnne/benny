@@ -12,16 +12,36 @@ const Navbar = () => {
     <View className="w-full px-4 flex-row justify-between items-center">
       <View className="flex-1">
         <Image
-          source={navLogo}
+          source={navLogo as any}
           resizeMode="contain"
           style={{ width: 60, height: 68 }}
         />
       </View>
-      <View className="flex-row justify-center items-center">
-        <Text className="text-4xl leading-0 font-nunito-black tracking-wide text-primary">
-          BENNY
-        </Text>
-        <SymbolView name="pawprint" tintColor={theme.colors.primary} size={30} />
+      <View className="flex-row items-center gap-4">
+        <TouchableOpacity
+          onPress={() => router.push("/(screens)/payday/payday")}
+          accessibilityRole="button"
+          accessibilityLabel="Log a paycheck"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <SymbolView
+            name="banknote"
+            tintColor={theme.colors.primary}
+            size={32}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => router.push("/(screens)/new")}
+          accessibilityRole="button"
+          accessibilityLabel="Create new receipt"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        >
+          <SymbolView
+            name="doc.viewfinder"
+            tintColor={theme.colors.primary}
+            size={32}
+          />
+        </TouchableOpacity>
       </View>
     </View>
   );

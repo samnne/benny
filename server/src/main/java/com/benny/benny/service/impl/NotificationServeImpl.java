@@ -32,6 +32,7 @@ public class NotificationServeImpl implements NotificationService {
         ExpoPushNotificationClient client = ExpoPushNotificationClient
                 .builder()
                 .setHttpClient(httpClient)
+                
                 // .setAccessToken("TOKEN")
                 .build();
 

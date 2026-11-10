@@ -1,10 +1,13 @@
 import { usePreferences } from "@/store/zustand";
 import { Ionicons } from "@expo/vector-icons";
+import DateTimePicker, { DateTimePickerEvent } from "@react-native-community/datetimepicker";
 import { router, useLocalSearchParams } from "expo-router";
 import { styled } from "nativewind";
 import { useState } from "react";
-import { ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { Platform, ScrollView, Text, TouchableOpacity, View } from "react-native";
 import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
+
+import { schedulePaydayReminder } from "@/constants/functions";
 
 const SafeAreaView = styled(RNSAV)
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -65,17 +68,34 @@ function formatDate(date: Date): string {
   });
 }
 
+function toISODate(date: Date): string {
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(
+    date.getDate(),
+  ).padStart(2, "0")}`;
+}
+
+function startOfToday(): Date {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return today;
+}
+
 // ── Screen ───────────────────────────────────────────────────────────────────
 
 const PayPeriod = () => {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const isOnboarding = from === "onboarding";
 
-  const { payFrequency, nextPayday, setPayFrequency, setNextPayday } = usePreferences();
+  const { payFrequency, nextPayday, notifications, setPayFrequency, setNextPayday } = usePreferences();
 
   const [selectedFreq,    setSelectedFreq]    = useState<PayFrequency>(payFrequency);
   const [selectedDay,     setSelectedDay]     = useState<number | null>(null);
   const [selectedPayday,  setSelectedPayday]  = useState<string | null>(nextPayday);
+  const [customDate,      setCustomDate]      = useState<Date | null>(
+    nextPayday ? new Date(`${nextPayday}T00:00:00`) : null,
+  );
+  const [isCustom,        setIsCustom]        = useState(false);
+  const [showCustomPicker, setShowCustomPicker] = useState(false);
 
   // Recompute available paydays whenever freq or day changes
   const paydays = selectedDay !== null ? getNextPaydays(selectedFreq, selectedDay) : [];
@@ -86,18 +106,46 @@ const PayPeriod = () => {
     setSelectedFreq(freq);
     setSelectedDay(null);
     setSelectedPayday(null);
+    setIsCustom(false);
+    setShowCustomPicker(false);
   };
 
   const handleDayChange = (day: number) => {
     setSelectedDay(day);
     setSelectedPayday(null); // reset date when day changes
+    setIsCustom(false);
+    setShowCustomPicker(false);
   };
 
-  
+  const handleCustomDateChange = (_: DateTimePickerEvent, date?: Date) => {
+    if (Platform.OS === "android") setShowCustomPicker(false);
+    if (date) {
+      setCustomDate(date);
+      setSelectedPayday(toISODate(date));
+      setIsCustom(true);
+    }
+  };
+
+  const handleCustomPress = () => {
+    setShowCustomPicker((open) => !open);
+  };
+
+  const handlePaydayPress = (iso: string) => {
+    setSelectedPayday(iso);
+    setIsCustom(false);
+    setShowCustomPicker(false);
+  };
+
   const handleSave = () => {
     if (!canSave) return;
     setPayFrequency(selectedFreq);
     setNextPayday(selectedPayday!);
+
+    if (notifications.paydayReminder) {
+      schedulePaydayReminder(selectedPayday!).catch((err) =>
+        console.warn("Failed to schedule payday reminder:", err),
+      );
+    }
 
     if (isOnboarding) {
       router.push("/(screens)/onboarding/spending-goal");
@@ -195,18 +243,18 @@ const PayPeriod = () => {
               When is your next payday?
             </Text>
             <Text className="font-nunito text-sm text-text/40 mb-4">
-              Pick the closest upcoming date — Benny will calculate the rest.
+              Pick the closest upcoming date, or choose a custom date — Benny will calculate the rest.
             </Text>
 
             <View className="flex-row flex-wrap gap-2">
               {paydays.map((date) => {
-                const iso    = date.toISOString().split("T")[0];
-                const active = selectedPayday === iso;
-              
+                const iso    = toISODate(date);
+                const active = !isCustom && selectedPayday === iso;
+
                 return (
                   <TouchableOpacity
                     key={iso}
-                    onPress={() => setSelectedPayday(iso)}
+                    onPress={() => handlePaydayPress(iso)}
                     activeOpacity={0.75}
                     className={`px-4 py-2.5 rounded-full border-2 ${
                       active ? "bg-primary border-primary" : "bg-white border-primary/15"
@@ -218,7 +266,49 @@ const PayPeriod = () => {
                   </TouchableOpacity>
                 );
               })}
+
+              {/* Custom next payday */}
+              <TouchableOpacity
+                onPress={handleCustomPress}
+                activeOpacity={0.75}
+                className={`flex-row items-center gap-2 px-4 py-2.5 rounded-full border-2 ${
+                  isCustom ? "bg-primary border-primary" : "bg-white border-primary/15"
+                }`}
+              >
+                <Ionicons
+                  name="calendar-outline"
+                  size={16}
+                  color={isCustom ? "#ffffff" : "#e61e3f"}
+                />
+                <Text className={`font-nunito-bold text-sm ${isCustom ? "text-white" : "text-text/70"}`}>
+                  {isCustom && customDate ? formatDate(customDate) : "Custom date"}
+                </Text>
+              </TouchableOpacity>
             </View>
+
+            {showCustomPicker && (
+              <View className="mt-3">
+                <DateTimePicker
+                  value={customDate ?? startOfToday()}
+                  mode="date"
+                  display={Platform.OS === "ios" ? "spinner" : "default"}
+                  minimumDate={startOfToday()}
+                  onChange={handleCustomDateChange}
+                  themeVariant="light"
+                  textColor="#0e0104"
+                  style={Platform.OS === "ios" ? { height: 216, width: "100%" } : undefined}
+                />
+                {Platform.OS === "ios" && (
+                  <TouchableOpacity
+                    onPress={() => setShowCustomPicker(false)}
+                    activeOpacity={0.75}
+                    className="px-6 py-2 self-center"
+                  >
+                    <Text className="font-fredoka-semibold text-primary">Done</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            )}
           </>
         )}
 

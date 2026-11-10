@@ -4,9 +4,10 @@ import "react-native-reanimated";
 
 import { useFonts } from "expo-font";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { useEffect } from "react";
 
 export default function RootLayout() {
-  const [fontsLoaded] = useFonts({
+  const [fontsLoaded, fontError] = useFonts({
     "Fredoka-Bold": require("@/assets/fonts/Fredoka-Bold.ttf"),
     "Fredoka-Light": require("@/assets/fonts/Fredoka-Light.ttf"),
     "Fredoka-Medium": require("@/assets/fonts/Fredoka-Medium.ttf"),
@@ -21,21 +22,21 @@ export default function RootLayout() {
     "Nunito-Regular": require("@/assets/fonts/Nunito-Regular.ttf"),
     "Nunito-SemiBold": require("@/assets/fonts/Nunito-SemiBold.ttf"),
   });
- 
+  useEffect(() => {
+    if (fontError) {
+      console.log("Font error", fontError);
+    }
+  }, [fontError]);
 
   return (
-   
-      <GestureHandlerRootView>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            
-          }}
-          
-        >
-          <Stack.Screen  name="(tabs)" />
-        </Stack>
-      </GestureHandlerRootView>
-
+    <GestureHandlerRootView>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </GestureHandlerRootView>
   );
 }

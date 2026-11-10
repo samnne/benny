@@ -110,7 +110,23 @@ const NewReceipt = () => {
       <TouchableOpacity
         onPress={() => {
           reset();
-          setServerReceipt({});
+          const todayDate = new Date().toISOString().split("T")[0];
+          setServerReceipt({
+            merchant: { name: "", address: null },
+            date: todayDate,
+            currency: "CAD",
+            discounts: null,
+            items: [],
+            subtotal: 0,
+            tax: 0,
+            tip: 0,
+            total: 0,
+            category: "other",
+            confidence: "high",
+            benny_message: "",
+            payment_method: null,
+            time: null,
+          } as unknown as Receipt);
           router.push("/(screens)/receipt/view");
         }}
         activeOpacity={0.8}

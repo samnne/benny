@@ -1,16 +1,8 @@
 import { usePreferences, useReceipt } from "@/store/zustand";
+import { DAY_MS, getPayPeriodStart, parseLocalDate } from "@/utils/payPeriod";
 import { useMemo } from "react";
 
 export type Period = "pay" | "30d" | "all";
-
-const PERIOD_DAYS = {
-    weekly: 7,
-    biweekly: 14,
-    semimonthly: 15,
-    monthly: 30,
-} as const;
-
-const DAY_MS = 86_400_000;
 
 function receiptTotal(r: Receipt): number {
     if (typeof (r as any).total === "number") return (r as any).total;
@@ -22,9 +14,7 @@ function receiptTotal(r: Receipt): number {
 }
 
 function receiptDate(r: Receipt): Date | null {
-    const raw = (r as any).date ?? (r as any).createdAt;
-    const d = raw ? new Date(raw) : null;
-    return d && !isNaN(d.getTime()) ? d : null;
+    return parseLocalDate((r as any).date ?? (r as any).createdAt);
 }
 
 export function useReceiptAnalytics(period: Period) {
@@ -33,18 +23,13 @@ export function useReceiptAnalytics(period: Period) {
 
     return useMemo(() => {
         const now = new Date();
-        const periodDays = PERIOD_DAYS[payFrequency];
 
         // Work out the start of the window
         let start: Date | null = null;
         if (period === "30d") {
             start = new Date(now.getTime() - 30 * DAY_MS);
         } else if (period === "pay") {
-            const next = nextPayday ? new Date(nextPayday) : null;
-            start =
-                next && !isNaN(next.getTime())
-                    ? new Date(next.getTime() - periodDays * DAY_MS)
-                    : new Date(now.getTime() - periodDays * DAY_MS);
+            start = getPayPeriodStart(nextPayday, payFrequency, now);
         }
 
         const inRange = receipts.filter((r) => {
@@ -66,14 +51,14 @@ export function useReceiptAnalytics(period: Period) {
             saved += r.discounts ?? 0;
 
             const name = r.merchant?.name?.trim() || "Unknown";
-            const m = merchants.get(name) ?? { total: 0, visits: 0 };
+            const m = merchants?.get(name) ?? { total: 0, visits: 0 };
             m.total += total;
             m.visits += 1;
             merchants.set(name, m);
 
             for (const it of (r.items ?? []) as any[]) {
                 const key = (it.name ?? "Unknown").trim().toLowerCase();
-                const agg = items.get(key) ?? { total: 0, count: 0 };
+                const agg = items?.get(key) ?? { total: 0, count: 0 };
                 agg.total += it.total_price || 0;
                 agg.count += it.quantity ?? 1;
                 items.set(key, agg);

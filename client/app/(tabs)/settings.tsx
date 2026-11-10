@@ -1,11 +1,19 @@
 import Navbar from "@/components/Navigation/Navbar";
+import { ChangePasswordModal } from "@/components/UI/Settings/ChangePasswordModal";
 import { ChattinessRow } from "@/components/UI/Settings/ChattinessRow";
+import { EditEmailModal } from "@/components/UI/Settings/EditEmailModal";
+import { EditNameModal } from "@/components/UI/Settings/EditNameModal";
 import { Row } from "@/components/UI/Settings/Row";
 import { Section } from "@/components/UI/Settings/Section";
 import { ToggleRow } from "@/components/UI/Settings/ToggleRow";
 import { auth } from "@/config/firebase";
-import { usePreferences } from "@/store/zustand";
-import { router } from "expo-router";
+import { usePaychecks } from "@/store/paychecks";
+import { usePreferences, useReceipt } from "@/store/zustand";
+import { hasPasswordProvider } from "@/utils/auth";
+import { sharePaychecksCsv, shareReceiptsCsv } from "@/utils/export";
+import { Redirect, router } from "expo-router";
+import { deleteUser, onAuthStateChanged } from "firebase/auth";
+import { useEffect, useState } from "react";
 
 import * as Application from "expo-application";
 import { styled } from "nativewind";
@@ -22,8 +30,6 @@ const PAY_FREQUENCY_LABELS: Record<string, string> = {
 };
 
 const Settings = () => {
-  const { currentUser } = auth;
-
   const {
     payFrequency,
     nextPayday,
@@ -34,6 +40,49 @@ const Settings = () => {
     setNotifications,
   } = usePreferences();
 
+  const [accountModal, setAccountModal] = useState<
+    "name" | "email" | "password" | null
+  >(null);
+  const [profile, setProfile] = useState({
+    name: auth.currentUser?.displayName ?? "",
+    email: auth.currentUser?.email ?? "",
+  });
+
+  useEffect(() => {
+    return onAuthStateChanged(auth, (user) => {
+      setProfile({
+        name: user?.displayName ?? "",
+        email: user?.email ?? "",
+      });
+    });
+  }, []);
+
+  const refreshProfile = () => {
+    const user = auth.currentUser;
+    setProfile({
+      name: user?.displayName ?? "",
+      email: user?.email ?? "",
+    });
+  };
+
+  const handleChangePassword = () => {
+    if (!hasPasswordProvider()) {
+      Alert.alert(
+        "No password to change",
+        "You signed in with Google or Apple. Use that provider to sign in.",
+      );
+      return;
+    }
+
+    setAccountModal("password");
+  };
+
+  const getReceipts = useReceipt((s) => s.getReceipts);
+  const getPaychecks = usePaychecks((s) => s.getPaychecks);
+  const [exporting, setExporting] = useState<"receipts" | "paychecks" | null>(
+    null,
+  );
+
   const paydayLabel = nextPayday
     ? `${PAY_FREQUENCY_LABELS[payFrequency]} · Next Payday ${new Date(`${nextPayday}T00:00:00`).toDateString()}`
     : PAY_FREQUENCY_LABELS[payFrequency];
@@ -43,17 +92,75 @@ const Settings = () => {
     router.replace("/(screens)/onboarding");
   };
 
-  const handleExportData = () => {
-    Alert.alert("Export receipts", "Mock export: your receipts CSV is ready.");
+  const handleExportReceipts = async () => {
+    if (exporting) return;
+
+    setExporting("receipts");
+    try {
+      await getReceipts();
+      const receipts = useReceipt.getState().receipts;
+
+      if (receipts.length === 0) {
+        Alert.alert("Nothing to export", "You don't have any receipts yet.");
+        return;
+      }
+
+      await shareReceiptsCsv(receipts);
+    } catch (error) {
+      Alert.alert(
+        "Export failed",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setExporting(null);
+    }
+  };
+
+  const handleExportPaychecks = async () => {
+    if (exporting) return;
+
+    setExporting("paychecks");
+    try {
+      await getPaychecks();
+      const { paychecks, error } = usePaychecks.getState();
+
+      // Fall back to the cached paychecks if the refresh failed.
+      if (paychecks.length === 0) {
+        Alert.alert(
+          error ? "Couldn't load paychecks" : "Nothing to export",
+          error ?? "You haven't logged any paychecks yet.",
+        );
+        return;
+      }
+
+      await sharePaychecksCsv(paychecks);
+    } catch (error) {
+      Alert.alert(
+        "Export failed",
+        error instanceof Error ? error.message : "Please try again.",
+      );
+    } finally {
+      setExporting(null);
+    }
   };
 
   const handleDeleteAccount = () => {
     Alert.alert(
       "Delete account",
-      "Mock action: your account and data would be permanently deleted.",
+      "Your account and data would be permanently deleted.",
       [
         { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: () => { } },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: () => {
+            const { currentUser } = auth;
+            if (!currentUser) {
+              return <Redirect href={"/(screens)/(auth)/login"} />;
+            }
+            deleteUser(currentUser);
+          },
+        },
       ],
     );
   };
@@ -66,7 +173,7 @@ const Settings = () => {
           Settings
         </Text>
         <Text className="font-nunito text-sm text-text/40 mt-0.5">
-          {currentUser?.email}
+          {profile.email}
         </Text>
       </View>
 
@@ -79,19 +186,19 @@ const Settings = () => {
           <Row
             icon="person-outline"
             label="Name"
-            sublabel={currentUser?.displayName ?? "—"}
-            onPress={() => { }}
+            sublabel={profile.name || "Add your name"}
+            onPress={() => setAccountModal("name")}
           />
           <Row
             icon="mail-outline"
             label="Email"
-            sublabel={currentUser?.email ?? "—"}
-            onPress={() => { }}
+            sublabel={profile.email || "—"}
+            onPress={() => setAccountModal("email")}
           />
           <Row
             icon="lock-closed-outline"
             label="Change password"
-            onPress={() => { }}
+            onPress={handleChangePassword}
           />
           <Row
             icon="log-out-outline"
@@ -108,7 +215,11 @@ const Settings = () => {
             sublabel={paydayLabel}
             onPress={() => router.push("/(screens)/onboarding/pay-period")}
           />
-          <Row icon="cash-outline" label="Log a paycheck" onPress={() => router.push("/(screens)/payday/payday")} />
+          <Row
+            icon="cash-outline"
+            label="Log a paycheck"
+            onPress={() => router.push("/(screens)/payday/payday")}
+          />
         </Section>
 
         <Section title="Spending Goal">
@@ -147,8 +258,8 @@ const Settings = () => {
             onChange={(v) => setNotifications({ paydayReminder: v })}
           />
           <Row
-            icon=""
-            label="Hanlde Notifications"
+            icon="notifications-outline"
+            label="Handle Notifications"
             onPress={() => router.push("/(screens)/(notis)/notification")}
           />
         </Section>
@@ -157,7 +268,14 @@ const Settings = () => {
           <Row
             icon="download-outline"
             label="Export receipts as CSV"
-            onPress={handleExportData}
+            sublabel={exporting === "receipts" ? "Preparing…" : undefined}
+            onPress={exporting ? undefined : handleExportReceipts}
+          />
+          <Row
+            icon="cash-outline"
+            label="Export paychecks as CSV"
+            sublabel={exporting === "paychecks" ? "Preparing…" : undefined}
+            onPress={exporting ? undefined : handleExportPaychecks}
           />
           <Row
             icon="trash-outline"
@@ -172,21 +290,41 @@ const Settings = () => {
           <Row
             icon="information-circle-outline"
             label="Version"
-            sublabel={Application.nativeApplicationVersion}
+            sublabel={Application.nativeApplicationVersion ?? "—"}
           />
           <Row
             icon="document-text-outline"
             label="Privacy policy"
-            onPress={() => { }}
+            onPress={() => {}}
           />
           <Row
             icon="reader-outline"
             label="Terms of service"
-            onPress={() => { }}
+            onPress={() => {}}
           />
-          <Row icon="star-outline" label="Rate Benny" onPress={() => { }} />
+          <Row icon="star-outline" label="Rate Benny" onPress={() => {}} />
         </Section>
       </ScrollView>
+
+      {accountModal === "name" ? (
+        <EditNameModal
+          visible
+          currentName={profile.name}
+          onClose={() => setAccountModal(null)}
+          onSaved={refreshProfile}
+        />
+      ) : null}
+      {accountModal === "email" ? (
+        <EditEmailModal
+          visible
+          currentEmail={profile.email}
+          onClose={() => setAccountModal(null)}
+          onSaved={refreshProfile}
+        />
+      ) : null}
+      {accountModal === "password" ? (
+        <ChangePasswordModal visible onClose={() => setAccountModal(null)} />
+      ) : null}
     </SafeAreaView>
   );
 };

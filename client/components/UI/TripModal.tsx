@@ -1,7 +1,12 @@
 import React from "react";
 import { Modal, Pressable, Text, View } from "react-native";
 import { SymbolView } from "expo-symbols";
-import { BASE_URL, getBennyMessage, requestHeader, theme } from "@/constants/constants";
+import {
+  BASE_URL,
+  getBennyMessage,
+  requestHeader,
+  theme,
+} from "@/constants/constants";
 import { useAuth, useBudget, useReceipt, useTrip } from "@/store/zustand";
 import { useRouter } from "expo-router";
 
@@ -21,10 +26,23 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
     setServerReceipt,
   } = useReceipt();
   const router = useRouter();
-  const {token} = useAuth()
+  const { token } = useAuth();
   const saved = budget - total;
   const isUnder = saved > 0;
   const percentage = Math.min((total / budget) * 100, 100);
+
+  const merchantName = serverReceipt?.merchant?.name ?? "";
+  const isFormValid =
+    merchantName.trim().length > 0 &&
+    items.length > 0 &&
+    items.every(
+      (item) =>
+        item.name &&
+        item.name.trim().length > 0 &&
+        typeof item.total_price === "number" &&
+        !isNaN(item.total_price) &&
+        item.total_price > 0,
+    );
 
   const handleDone = async () => {
     setModalVisible(false);
@@ -33,40 +51,40 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
       name: item.name ?? `Item ${i}`,
     }));
     const newReceipt: Receipt = {
-
       ...serverReceipt,
       items: newItems,
       benny_message: getBennyMessage("standard"),
-
       total: total || +serverReceipt.total?.toFixed(2),
     };
     if (!serverReceipt.id) {
-      console.log("hey")
-      const response  = await fetch(`${BASE_URL}/api/receipt/save`, {
+      
+      const response = await fetch(`${BASE_URL}/api/receipt/save`, {
         method: "post",
         headers: {
           ...requestHeader(token).headers,
-          "Content-Type": "application/json"
+          "Content-Type": "application/json",
         },
-        body: JSON.stringify(serverReceipt)
-      })
-      const data = await response.json()
+        body: JSON.stringify(newReceipt),
+      });
+      const data = await response.json();
       addReceipt({ ...data });
-    } else {
-      console.log("heyyyy")
-      // updateReceipt({ ...newReceipt, total });
+    } else { 
+      console.log("HEYYY")
+     
+      updateReceipt({ ...newReceipt, total });
     }
-    setServerReceipt({});
+    setServerReceipt({} as Receipt);
 
     reset();
     router.replace("/receipts");
   };
-
+  console.log(serverReceipt)
   return (
     <Modal
       animationType="slide"
       transparent
       visible={modalVisible}
+      
       onRequestClose={() => setModalVisible(false)}
     >
       <View className="flex-1 justify-end p-4  bg-text/25">
@@ -171,8 +189,13 @@ const TripModal = ({ modalVisible, setModalVisible }: TripModalProps) => {
           {/* Done button */}
           <View className="p-5">
             <Pressable
+              disabled={!isFormValid}
               onPress={handleDone}
-              className="bg-primary rounded-full py-4 items-center justify-center"
+              className={`rounded-full py-4 items-center justify-center ${
+                isFormValid
+                  ? "bg-primary opacity-100"
+                  : "bg-primary/40 opacity-50"
+              }`}
             >
               <Text className="text-background text-xl font-nunito-bold">
                 Done

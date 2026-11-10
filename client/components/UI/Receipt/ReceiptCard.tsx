@@ -207,7 +207,7 @@ const ReceiptCard = ({ receipt }: { receipt: Receipt }) => {
 
             <View className="w-full p-4 flex-1">
               {receipt.items
-                .filter((_, i) => i < 2)
+                ?.filter((_, i) => i < 2)
                 .map((item) => (
                   <View
                     key={item.id}

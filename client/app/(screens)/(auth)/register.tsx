@@ -14,7 +14,7 @@ import { AnimatedInput } from "@/components/UI/Onboarding/OnInput";
 import { auth } from "@/config/firebase";
 import { theme } from "@/constants/constants";
 import { router } from "expo-router";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { Image } from "moti";
 import { styled } from "nativewind";
 import bennyHi from "../../../assets/images/benny-hi.png";
@@ -26,7 +26,7 @@ const CreateAccount = () => {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
-    const { token, setToken } = useAuth();
+    const { setToken } = useAuth();
 
   async function handleSignUp() {
     try {
@@ -37,6 +37,13 @@ const CreateAccount = () => {
       );
 
       if (user) {
+        const displayName = name.trim().replace(/\s+/g, " ");
+        if (displayName) {
+          // Don't block sign-up if saving the name fails.
+          await updateProfile(user, { displayName }).catch((error) => {
+            console.log("Could not set display name", error);
+          });
+        }
         setToken(await user.getIdToken())
         router.replace("/home");
       }
@@ -135,7 +142,7 @@ const CreateAccount = () => {
               style={loginLink.animatedStyle}
               onPressIn={loginLink.onPressIn}
               onPressOut={loginLink.onPressOut}
-              onPress={() => router.push("/onboarding/login")}
+              onPress={() => router.push("/(screens)/(auth)/login")}
             >
               <Text
                 className="font-nunito-semibold"

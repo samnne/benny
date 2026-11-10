@@ -11,6 +11,7 @@
       "bundleIdentifier": "com.samuelechefu.benny",
       "googleServicesFile": "./GoogleService-Info.plist",
       "supportsTablet": true,
+      "useAppleSignIn": true,
       "icon": {
         "dark": "./assets/icons/ios-dark.png",
         "light": "./assets/icons/ios-light.png",
@@ -89,7 +90,9 @@
       "expo-status-bar",
       "expo-web-browser",
       "expo-notifications",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-asset",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

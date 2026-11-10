@@ -1,9 +1,10 @@
 import Navbar from "@/components/Navigation/Navbar";
 import { BudgetModal } from "@/components/UI/BudgetModal";
 import { auth } from "@/config/firebase";
-import { CATEGORY_ICONS, theme } from "@/constants/constants";
+import { BASE_URL, CATEGORY_ICONS, theme } from "@/constants/constants";
 import { getDaysUntil } from "@/constants/functions";
 import { useAuth, usePreferences, useReceipt } from "@/store/zustand";
+import { filterReceiptsForPayPeriod } from "@/utils/payPeriod";
 import { clsx } from "clsx";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
@@ -23,7 +24,7 @@ const Home = () => {
   const { token, setToken } = useAuth();
   const { receipts, getReceipts } = useReceipt();
   const [toggled, setToggled] = useState(false);
-  const { budgetPerPeriod, nextPayday } = usePreferences();
+  const { budgetPerPeriod, nextPayday, payFrequency } = usePreferences();
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -54,11 +55,14 @@ const Home = () => {
   useEffect(() => {
     void refreshReceipts();
   }, []);
-  const safeReceipts = receipts || [];
   const safeBudget = budgetPerPeriod || 0;
+  const periodReceipts = useMemo(
+    () => filterReceiptsForPayPeriod(receipts ?? [], nextPayday, payFrequency),
+    [receipts, nextPayday, payFrequency],
+  );
   const totalSpent = useMemo(
-    () => safeReceipts.reduce((acc, r) => acc + (Number(r.total) || 0), 0),
-    [safeReceipts],
+    () => periodReceipts.reduce((acc, r) => acc + (Number(r.total) || 0), 0),
+    [periodReceipts],
   );
   const totalLeft = safeBudget - totalSpent;
   const budgetPct =
@@ -83,7 +87,6 @@ const Home = () => {
       },
     [],
   );
-
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />
@@ -240,14 +243,16 @@ const Home = () => {
         <View className="gap-4 justify-center w-full px-2 border-pill/20 rounded-3xl">
           <Text className="text-4xl font-nunito-black">Receipt Overview</Text>
 
-          {receipts.length === 0 ? (
+          {periodReceipts.length === 0 ? (
             <View className="items-center py-8 gap-2 border-2 border-dashed border-primary/20 rounded-2xl">
               <SymbolView
                 name="receipt"
                 size={32}
                 tintColor={theme.colors.primary + "40"}
               />
-              <Text className="font-nunito text-text/40">No receipts yet</Text>
+              <Text className="font-nunito text-text/40">
+                No receipts this pay period
+              </Text>
             </View>
           ) : (
             <ScrollView
@@ -255,7 +260,7 @@ const Home = () => {
               showsHorizontalScrollIndicator={false}
               className="flex-1 flex-row"
             >
-              {receipts.map((receipt) => (
+              {periodReceipts.map((receipt) => (
                 <Pressable
                   key={receipt.id}
                   onPress={() => router.push("/receipts")}
@@ -287,21 +292,6 @@ const Home = () => {
               ))}
             </ScrollView>
           )}
-
-          <Pressable
-            onPress={() => router.push("/(screens)/new")}
-            className="mr-2 items-center p-2 gap-4 rounded-2xl flex-row justify-center border-dashed border bg-background border-primary/20"
-          >
-            <Text
-              className="text-xl flex-1 w-full text-primary/80 font-bold"
-              numberOfLines={1}
-            >
-              Create New Receipt
-            </Text>
-            <View className="flex-row items-center bg-primary/10 rounded-full p-2">
-              <SymbolView name="plus" tintColor={theme.colors.primary} />
-            </View>
-          </Pressable>
         </View>
       </ScrollView>
 

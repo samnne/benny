@@ -1,9 +1,10 @@
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
     Alert,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
+    type ScrollViewInstance,
     Text,
     TextInput,
     TouchableOpacity,
@@ -14,6 +15,7 @@ import DateTimePicker, {
     DateTimePickerEvent,
 } from "@react-native-community/datetimepicker";
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
 import { styled } from "nativewind";
 import { SafeAreaView as RNSAV } from "react-native-safe-area-context";
 
@@ -92,24 +94,46 @@ function Stat({ label, value }: { label: string; value: string }) {
     );
 }
 
-const payday = () => {
+const Payday = () => {
     const dark = useColorScheme() === "dark";
     const placeholder = dark ? "#fef1f499" : "#0e010499";
     const iconColor = dark ? "#e1193a" : "#e61e3f";
 
-    const scrollRef = useRef<ScrollView>(null);
-    const { paychecks, addPaycheck, updatePaycheck, removePaycheck } =
-        usePaychecks();
+    const scrollRef = useRef<ScrollViewInstance>(null);
+    const {
+        paychecks,
+        categories,
+        isLoading,
+        isSaving,
+        error,
+        getPaychecks,
+        addCategory,
+        addPaycheck,
+        updatePaycheck,
+        removePaycheck,
+    } = usePaychecks();
     const { payFrequency, nextPayday, setNextPayday } = usePreferences();
 
+    useFocusEffect(
+        useCallback(() => {
+            void getPaychecks();
+        }, [getPaychecks]),
+    );
+
     const [amount, setAmount] = useState("");
-    const [source, setSource] = useState("");
+    const [category, setCategory] = useState("");
     const [date, setDate] = useState(new Date());
     const [showPicker, setShowPicker] = useState(false);
     const [editingId, setEditingId] = useState<string | null>(null);
+    const [filter, setFilter] = useState<string | null>(null);
 
     const { sorted, yearTotal, average } = useMemo(() => {
-        const sorted = [...paychecks].sort((a, b) => b.date.localeCompare(a.date));
+        const all = [...paychecks].sort((a, b) => b.date.localeCompare(a.date));
+        const sorted = filter
+            ? all.filter(
+                  (p) => p.category.toLowerCase() === filter.toLowerCase(),
+              )
+            : all;
         const year = String(new Date().getFullYear());
         const yearTotal = sorted
             .filter((p) => p.date.startsWith(year))
@@ -118,11 +142,11 @@ const payday = () => {
             ? sorted.reduce((s, p) => s + p.amount, 0) / sorted.length
             : 0;
         return { sorted, yearTotal, average };
-    }, [paychecks]);
+    }, [paychecks, filter]);
 
     const resetForm = () => {
         setAmount("");
-        setSource("");
+        setCategory("");
         setDate(new Date());
         setEditingId(null);
         setShowPicker(false);
@@ -133,22 +157,45 @@ const payday = () => {
         if (selected) setDate(selected);
     };
 
-    const handleSave = () => {
+    const handleSave = async () => {
         const value = parseFloat(amount.replace(/[^0-9.]/g, ""));
         if (!isFinite(value) || value <= 0) {
             Alert.alert("Enter an amount", "Add the amount of your paycheck.");
             return;
         }
+        // Reuse the existing casing when the user types a category that
+        // already exists, otherwise create it.
+        const typedCategory = category.trim().replace(/\s+/g, " ");
+        const categoryName =
+            categories.find(
+                (c) => c.toLowerCase() === typedCategory.toLowerCase(),
+            ) ?? typedCategory;
+        if (categoryName) await addCategory(categoryName);
+
         const payload = {
             amount: +value.toFixed(2),
             date: toISODate(date),
-            source: source.trim(),
+            category: categoryName,
         };
 
         if (editingId) {
-            updatePaycheck(editingId, payload);
+            const saved = await updatePaycheck(editingId, payload);
+            if (!saved) {
+                Alert.alert(
+                    "Couldn't save paycheck",
+                    "Check your connection and try again.",
+                );
+                return;
+            }
         } else {
-            addPaycheck(payload);
+            const saved = await addPaycheck(payload);
+            if (!saved) {
+                Alert.alert(
+                    "Couldn't save paycheck",
+                    "Check your connection and try again.",
+                );
+                return;
+            }
             // Keep the next payday moving forward once a paycheck is logged
             if (!nextPayday || nextPayday <= payload.date) {
                 setNextPayday(computeNextPayday(date, payFrequency as Freq));
@@ -160,7 +207,7 @@ const payday = () => {
     const startEdit = (p: Paycheck) => {
         setEditingId(p.id);
         setAmount(String(p.amount));
-        setSource(p.source);
+        setCategory(p.category);
         setDate(fromISODate(p.date));
         scrollRef.current?.scrollTo({ y: 0, animated: true });
     };
@@ -174,8 +221,15 @@ const payday = () => {
                 {
                     text: "Delete",
                     style: "destructive",
-                    onPress: () => {
-                        removePaycheck(p.id);
+                    onPress: async () => {
+                        const deleted = await removePaycheck(p.id);
+                        if (!deleted) {
+                            Alert.alert(
+                                "Couldn't delete paycheck",
+                                "Check your connection and try again.",
+                            );
+                            return;
+                        }
                         if (editingId === p.id) resetForm();
                     },
                 },
@@ -205,6 +259,11 @@ const payday = () => {
                             ? `Next payday: ${fromISODate(nextPayday).toDateString()}`
                             : "Next payday not set"}
                     </Text>
+                    {isLoading && (
+                        <Text className="font-nunito text-xs text-text/40 mt-1">
+                            Syncing…
+                        </Text>
+                    )}
                 </View>
 
                 <ScrollView
@@ -214,6 +273,53 @@ const payday = () => {
                     showsVerticalScrollIndicator={false}
                     contentContainerStyle={{ paddingBottom: 48 }}
                 >
+                    {/* Category filter */}
+                    <View className="flex-row flex-wrap gap-2 mb-4">
+                        <TouchableOpacity
+                            onPress={() => setFilter(null)}
+                            accessibilityRole="button"
+                            accessibilityState={{ selected: filter === null }}
+                            accessibilityLabel="Show all categories"
+                            className={`px-3 py-1.5 rounded-full ${
+                                filter === null ? "bg-primary" : "bg-pill"
+                            }`}
+                        >
+                            <Text
+                                className={`font-nunito-semibold text-xs ${
+                                    filter === null ? "text-white" : "text-text/60"
+                                }`}
+                            >
+                                All
+                            </Text>
+                        </TouchableOpacity>
+                        {categories.map((c) => {
+                            const selected =
+                                filter?.toLowerCase() === c.toLowerCase();
+                            return (
+                                <TouchableOpacity
+                                    key={c}
+                                    onPress={() => setFilter(selected ? null : c)}
+                                    accessibilityRole="button"
+                                    accessibilityState={{ selected }}
+                                    accessibilityLabel={`Filter by ${c}`}
+                                    className={`px-3 py-1.5 rounded-full ${
+                                        selected ? "bg-primary" : "bg-pill"
+                                    }`}
+                                >
+                                    <Text
+                                        className={`font-nunito-semibold text-xs ${
+                                            selected
+                                                ? "text-white"
+                                                : "text-text/60"
+                                        }`}
+                                    >
+                                        {c}
+                                    </Text>
+                                </TouchableOpacity>
+                            );
+                        })}
+                    </View>
+
                     {/* Stats */}
                     <View className="flex-row gap-3 mb-4">
                         <Stat label="Earned this year" value={money(yearTotal)} />
@@ -222,6 +328,11 @@ const payday = () => {
 
                     {/* Form */}
                     <Card title={editingId ? "Edit paycheck" : "Log a paycheck"}>
+                        {error && (
+                            <Text className="text-xs font-nunito text-primary mb-3">
+                                {error}
+                            </Text>
+                        )}
                         <Text className="text-xs font-nunito-semibold text-text/60  mb-1">
                             Amount
                         </Text>
@@ -236,16 +347,47 @@ const payday = () => {
                         />
 
                         <Text className="text-xs font-nunito-semibold text-text/60  mb-1">
-                            Source (optional)
+                            Category (optional)
                         </Text>
                         <TextInput
-                            value={source}
-                            onChangeText={setSource}
-                            placeholder="Employer or note"
+                            value={category}
+                            onChangeText={setCategory}
+                            placeholder="Paycheck, tips, refund…"
                             placeholderTextColor={placeholder}
-                            className={`${inputClass} mb-3`}
-                            accessibilityLabel="Paycheck source"
+                            className={`${inputClass} mb-2`}
+                            accessibilityLabel="Paycheck category"
                         />
+                        <View className="flex-row flex-wrap gap-2 mb-3">
+                            {categories.map((c) => {
+                                const selected =
+                                    c.toLowerCase() ===
+                                    category.trim().toLowerCase();
+                                return (
+                                    <TouchableOpacity
+                                        key={c}
+                                        onPress={() =>
+                                            setCategory(selected ? "" : c)
+                                        }
+                                        accessibilityRole="button"
+                                        accessibilityState={{ selected }}
+                                        accessibilityLabel={`Category ${c}`}
+                                        className={`px-3 py-1.5 rounded-full ${
+                                            selected ? "bg-primary" : "bg-pill"
+                                        }`}
+                                    >
+                                        <Text
+                                            className={`font-nunito-semibold text-xs ${
+                                                selected
+                                                    ? "text-white"
+                                                    : "text-text/60"
+                                            }`}
+                                        >
+                                            {c}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
 
                         <View className="mb-4">
                             <Text className="text-xs font-nunito-semibold text-text/60  mb-1">
@@ -273,6 +415,7 @@ const payday = () => {
                                         onChange={onDateChange}
                                         themeVariant="light"
                                         textColor="#0e0104"
+                                        
                                         style={Platform.OS === "ios" ? { height: 216, width: "100%" } : undefined}
                                     />
                                     {Platform.OS === "ios" && (
@@ -300,11 +443,19 @@ const payday = () => {
 
                         <TouchableOpacity
                             onPress={handleSave}
+                            disabled={isSaving}
                             accessibilityRole="button"
-                            className="bg-primary  rounded-full py-4 items-center"
+                            accessibilityState={{ disabled: isSaving }}
+                            className={`bg-primary  rounded-full py-4 items-center ${
+                                isSaving ? "opacity-60" : ""
+                            }`}
                         >
                             <Text className="font-fredoka-semibold text-white text-base">
-                                {editingId ? "Save changes" : "Log paycheck"}
+                                {isSaving
+                                    ? "Saving…"
+                                    : editingId
+                                      ? "Save changes"
+                                      : "Log paycheck"}
                             </Text>
                         </TouchableOpacity>
 
@@ -322,10 +473,12 @@ const payday = () => {
                     </Card>
 
                     {/* History */}
-                    <Card title="History">
+                    <Card title={filter ? `History · ${filter}` : "History"}>
                         {sorted.length === 0 && (
                             <Text className="text-sm font-nunito text-text/60 ">
-                                No paychecks logged yet.
+                                {filter
+                                    ? `No paychecks in ${filter} yet.`
+                                    : "No paychecks logged yet."}
                             </Text>
                         )}
                         {sorted.map((p) => (
@@ -344,7 +497,7 @@ const payday = () => {
                                     </Text>
                                     <Text className="font-nunito text-xs text-text/60 ">
                                         {prettyDate(p.date)}
-                                        {p.source ? `  ·  ${p.source}` : ""}
+                                        {p.category ? `  ·  ${p.category}` : ""}
                                     </Text>
                                 </TouchableOpacity>
                                 <TouchableOpacity
@@ -364,4 +517,4 @@ const payday = () => {
     );
 };
 
-export default payday;
+export default Payday;

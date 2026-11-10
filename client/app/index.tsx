@@ -21,17 +21,8 @@ export default function Index() {
     func();
   });
   if (currentUser) {
-    
     return <Redirect href={"/home"} />;
+  } else {
+    return <Redirect href={"/(screens)/(auth)/login"} />;
   }
-  return (
-    <KeyboardAvoidingView
-      behavior="padding"
-      className="flex-1 justify-center items-center "
-    >
-      <Link href={"/(screens)/onboarding/"}>
-        <Text>Edit app/index.tsx to edit this screen.{token}</Text>
-      </Link>
-    </KeyboardAvoidingView>
-  );
 }
