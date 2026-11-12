@@ -18,7 +18,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { Image } from "moti";
 import { styled } from "nativewind";
 import bennyHi from "../../../assets/images/benny-hi.png";
-import { useAuth } from "@/store/zustand";
+import { useAuth, usePreferences } from "@/store/zustand";
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 const SafeAreaView = styled(RNSAV);
 
@@ -44,7 +44,12 @@ const CreateAccount = () => {
             console.log("Could not set display name", error);
           });
         }
-        setToken(await user.getIdToken())
+        const idToken = await user.getIdToken();
+        setToken(idToken);
+        await usePreferences.getState().syncUser({
+          email: user.email || email,
+          displayName: displayName || user.displayName || "",
+        });
         router.replace("/home");
       }
     } catch (error) {

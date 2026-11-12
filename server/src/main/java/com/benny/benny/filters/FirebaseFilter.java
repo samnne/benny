@@ -32,6 +32,12 @@ public class FirebaseFilter extends OncePerRequestFilter {
                 // Extract user details (e.g., UID, Email)
                 String uid = decodedToken.getUid();
                 request.setAttribute("uid", uid); // Pass to controller
+                if (decodedToken.getEmail() != null) {
+                    request.setAttribute("email", decodedToken.getEmail());
+                }
+                if (decodedToken.getName() != null) {
+                    request.setAttribute("name", decodedToken.getName());
+                }
 
             } catch (Exception e) {
                 e.printStackTrace();

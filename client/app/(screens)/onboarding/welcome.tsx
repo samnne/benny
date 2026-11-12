@@ -10,9 +10,11 @@ import Animated from "react-native-reanimated";
 import bennyHi from "../../../assets/images/benny-hi.png";
 
 import { useGoogleAuth } from "@/hooks/useGoogleAuth";
+import { useAuth, usePreferences } from "@/store/zustand";
 import { signInWithCredential } from "@firebase/auth";
 import * as AppleAuthentication from "expo-apple-authentication";
 import { router } from "expo-router";
+import { useEffect } from "react";
 const SafeAreaView = styled(RNSAV);
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
@@ -21,15 +23,29 @@ const Register = () => {
   const apple = useButtonAnimation();
   const email = useButtonAnimation();
   const login = useButtonAnimation();
+  
+  const { request,response, promptAsync } = useGoogleAuth();
 
-  const { request, promptAsync } = useGoogleAuth();
   async function handleGoogle() {
     try {
       await promptAsync();
+    
+    
     } catch (error) {
       console.log(error);
     }
+
   }
+
+  useEffect(()=>{
+    if (auth.currentUser){
+      console.log("Logged in")
+      return router.replace("/home")
+    }
+  }, [response])
+ 
+
+  
   async function handleAppleSignIn() {
     try {
       const credential = await AppleAuthentication.signInAsync({
@@ -49,6 +65,12 @@ const Register = () => {
       const { user } = await signInWithCredential(auth, authCredential);
       console.log("Apple Sign-In successful, user:", user);
       if (user) {
+        const idToken = await user.getIdToken();
+        useAuth.getState().setToken(idToken);
+        await usePreferences.getState().syncUser({
+          email: user.email || "",
+          displayName: user.displayName || "",
+        });
         router.push("/home");
       }
     } catch (error: Error | any) {

@@ -27,10 +27,11 @@ const Home = () => {
   const { budgetPerPeriod, nextPayday, payFrequency } = usePreferences();
   const [budgetModalVisible, setBudgetModalVisible] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-
   const { currentUser } = auth;
+  
   const refreshReceipts = async () => {
-    // 1. Check for the user FIRST
+   
+
     if (!currentUser) {
       console.warn("No user ready yet, skipping fetch.");
       return;
@@ -39,6 +40,10 @@ const Home = () => {
       const tk = await currentUser.getIdToken();
       setToken(tk);
     }
+    await usePreferences.getState().syncUser({
+      email: currentUser.email || "",
+      displayName: currentUser.displayName || "",
+    });
 
     // 2. Only start the spinner if we know we are fetching
     setRefreshing(true);
@@ -87,7 +92,7 @@ const Home = () => {
       },
     [],
   );
-  console.log(BASE_URL)
+  console.log(BASE_URL);
   return (
     <SafeAreaView className="flex-1 bg-white" style={{ paddingTop: 16 }}>
       <Navbar />

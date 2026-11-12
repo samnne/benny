@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/icons/ios-light.png",
     "scheme": "benny",
-    
+
     "userInterfaceStyle": "automatic",
     "ios": {
       "bundleIdentifier": "com.samuelechefu.benny",
@@ -22,9 +22,7 @@
         "ITSAppUsesNonExemptEncryption": false
       }
     },
-    "platforms": [
-      "ios"
-    ],
+    "platforms": ["ios"],
     "plugins": [
       "expo-router",
       [

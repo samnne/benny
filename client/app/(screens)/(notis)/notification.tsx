@@ -11,7 +11,6 @@ import {
   Alert,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   Switch,
   Text,
@@ -32,12 +31,6 @@ Notifications.setNotificationHandler({
   }),
 });
 
-
-function handleRegistrationError(errorMessage: string) {
-  alert(errorMessage);
-  throw new Error(errorMessage);
-}
-
 async function registerForPushNotificationsAsync() {
   if (Platform.OS === "android") {
     await Notifications.setNotificationChannelAsync("default", {
@@ -55,27 +48,25 @@ async function registerForPushNotificationsAsync() {
     finalStatus = status;
   }
   if (finalStatus !== "granted") {
-    handleRegistrationError("Permission not granted to get push token for push notification!");
-    return;
+    return { granted: false, pushTokenString: null };
   }
-  const projectId = Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
-  if (!projectId) {
-    handleRegistrationError("Project ID not found");
-  }
+  const projectId =
+    Constants?.expoConfig?.extra?.eas?.projectId ??
+    Constants?.easConfig?.projectId;
   try {
     const pushTokenString = (
-      await Notifications.getExpoPushTokenAsync({
-        projectId,
-      })
+      await Notifications.getExpoPushTokenAsync(
+        projectId ? { projectId } : undefined,
+      )
     ).data;
-    console.log(pushTokenString);
+    // console.log("Expo push token:", pushTokenString);
     return {
-      granted: finalStatus,
+      granted: true,
       pushTokenString,
     };
   } catch (e: unknown) {
-    handleRegistrationError(`${e}`);
-    return null;
+    console.warn("Failed to get push token:", e);
+    return { granted: true, pushTokenString: null };
   }
 }
 
@@ -121,26 +112,37 @@ const NotificationsScreen = () => {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const isOnboarding = from === "onboarding";
 
-  const { notifications, setNotifications } = usePreferences();
+  const { notifications, setNotifications, setExpoPushToken } =
+    usePreferences();
 
   const [systemGranted, setSystemGranted] = useState<boolean | null>(null);
   const [requesting, setRequesting] = useState(false);
   const { token, setToken } = useAuth();
-  // Check current system permission on mount
+  // Check current system permission on mount and sync push token
   useEffect(() => {
-    Notifications.getPermissionsAsync().then(({ status }) => {
-      setSystemGranted(status === "granted");
+    Notifications.getPermissionsAsync().then(async ({ status }) => {
+      const granted = status === "granted";
+      setSystemGranted(granted);
+      if (granted) {
+        const res = await registerForPushNotificationsAsync();
+        if (res?.pushTokenString) {
+          await setExpoPushToken(res.pushTokenString);
+        }
+      }
     });
   }, []);
 
   const handleRequestPermission = async () => {
     setRequesting(true);
     const res = await registerForPushNotificationsAsync();
-    setSystemGranted(res?.granted === "granted");
-    console.log(res?.pushTokenString);
+    const isGranted = res?.granted === true;
+    setSystemGranted(isGranted);
+    if (res?.pushTokenString) {
+      await setExpoPushToken(res.pushTokenString);
+    }
     setRequesting(false);
 
-    if (!res?.granted) {
+    if (!isGranted) {
       Alert.alert(
         "Permission required",
         "Benny needs notification access to send you reminders. You can enable it in Settings.",
@@ -169,19 +171,19 @@ const NotificationsScreen = () => {
     }
   };
   const sendNotiTEST = async () => {
-    const tok = await registerForPushNotificationsAsync()
+    const tok = await registerForPushNotificationsAsync();
     const res = await fetch(`${BASE_URL}/api/notifications/`, {
       headers: {
         ...requestHeader(token).headers,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-    
+
       method: "POST",
       body: JSON.stringify({
-        param: tok?.pushTokenString
-      })
+        param: tok?.pushTokenString,
+      }),
     });
-   console.log(token)
+    console.log(token);
   };
 
   return (
@@ -189,7 +191,10 @@ const NotificationsScreen = () => {
       {/* Header */}
       <View className="flex-row items-center px-5 pt-4 pb-2">
         {!isOnboarding && (
-          <TouchableOpacity onPress={() => router.back()} className="mr-3 -ml-1">
+          <TouchableOpacity
+            onPress={() => router.back()}
+            className="mr-3 -ml-1"
+          >
             <Ionicons name="chevron-back" size={26} color="#e61e3f" />
           </TouchableOpacity>
         )}
@@ -206,14 +211,13 @@ const NotificationsScreen = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-
         {/* Description */}
         <Text className="font-nunito-bold text-base text-text/70 leading-6 mt-6 mb-6">
           {isOnboarding
             ? "Let Benny keep you in the loop — choose what you'd like to hear about. You can always change this later. 🐰"
             : "Choose which alerts Benny sends you."}
         </Text>
-        <TouchableOpacity onPress={()=> scheduleLocalNotification(5)}>
+        <TouchableOpacity onPress={() => scheduleLocalNotification(5)}>
           <Text>TEST NOTIFICATION</Text>
         </TouchableOpacity>
 
@@ -226,10 +230,16 @@ const NotificationsScreen = () => {
             style={{ borderWidth: 1.5, borderColor: "rgba(237,204,94,0.5)" }}
           >
             <View className="w-9 h-9 rounded-2xl bg-accent/40 items-center justify-center">
-              <Ionicons name="notifications-off-outline" size={18} color="#7a6400" />
+              <Ionicons
+                name="notifications-off-outline"
+                size={18}
+                color="#7a6400"
+              />
             </View>
             <View className="flex-1">
-              <Text className="font-nunito-bold text-sm text-text">Notifications are off</Text>
+              <Text className="font-nunito-bold text-sm text-text">
+                Notifications are off
+              </Text>
               <Text className="font-nunito text-xs text-text/50 mt-0.5">
                 Tap to allow Benny to send alerts
               </Text>
@@ -244,7 +254,9 @@ const NotificationsScreen = () => {
             style={{ borderWidth: 1.5, borderColor: "rgba(230,30,63,0.08)" }}
           >
             <Ionicons name="checkmark-circle" size={20} color="#e61e3f" />
-            <Text className="font-nunito-bold text-sm text-text/60">Notifications enabled</Text>
+            <Text className="font-nunito-bold text-sm text-text/60">
+              Notifications enabled
+            </Text>
           </View>
         )}
 
@@ -258,7 +270,9 @@ const NotificationsScreen = () => {
             <View
               key={key}
               className={`flex-row items-center px-4 py-4 ${
-                index < NOTIF_ITEMS.length - 1 ? "border-b border-primary/5" : ""
+                index < NOTIF_ITEMS.length - 1
+                  ? "border-b border-primary/5"
+                  : ""
               }`}
             >
               {/* Icon */}
@@ -268,8 +282,12 @@ const NotificationsScreen = () => {
 
               {/* Labels */}
               <View className="flex-1">
-                <Text className="font-nunito-bold text-base text-text">{label}</Text>
-                <Text className="font-nunito text-xs text-text/40 mt-0.5">{sublabel}</Text>
+                <Text className="font-nunito-bold text-base text-text">
+                  {label}
+                </Text>
+                <Text className="font-nunito text-xs text-text/40 mt-0.5">
+                  {sublabel}
+                </Text>
               </View>
 
               {/* Toggle */}
@@ -291,7 +309,9 @@ const NotificationsScreen = () => {
             className="mt-4 flex-row items-center justify-center gap-1"
           >
             <Ionicons name="settings-outline" size={13} color="#cbaab2" />
-            <Text className="font-nunito text-xs text-text/30">Enable in iOS Settings</Text>
+            <Text className="font-nunito text-xs text-text/30">
+              Enable in iOS Settings
+            </Text>
           </TouchableOpacity>
         )}
       </ScrollView>
@@ -319,7 +339,9 @@ const NotificationsScreen = () => {
 
         {isOnboarding && (
           <TouchableOpacity onPress={handleSave} className="mt-3 items-center">
-            <Text className="font-nunito text-xs text-text/30">Skip for now</Text>
+            <Text className="font-nunito text-xs text-text/30">
+              Skip for now
+            </Text>
           </TouchableOpacity>
         )}
       </View>

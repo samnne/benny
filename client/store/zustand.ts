@@ -58,8 +58,6 @@ export const useTrip = create<TripState>((set, get) => ({
   reset: () => set({ items: [], total: 0 }),
 }));
 
-
-
 type ReceiptState = {
   receipts: Receipt[];
   addReceipt: (receipt: Receipt) => void;
@@ -159,7 +157,7 @@ export const useReceipt = create<ReceiptState>((set, get) => {
       try {
         const res = await fetch(`${BASE_URL}/api/receipt/?receiptId=${id}`, {
           ...requestHeader(useAuth.getState().token),
-          method: "delete"
+          method: "delete",
         });
         const data = await res.json();
 
@@ -220,6 +218,14 @@ type PreferencesState = {
   onboardingComplete: boolean;
   setOnboardingComplete: (v: boolean) => void;
 
+  // Push Token
+  expoPushToken: string | null;
+  setExpoPushToken: (pushToken: string) => Promise<void>;
+
+  // Backend sync
+  syncUser: (userInfo?: { email?: string; displayName?: string; expoPushToken?: string }) => Promise<void>;
+  savePreferences: (overridePrefs?: Partial<Record<string, any>>) => Promise<void>;
+
   reset: () => void;
 };
 
@@ -234,18 +240,131 @@ const defaultPreferences = {
     paydayReminder: false,
   },
   onboardingComplete: false,
+  expoPushToken: null,
 };
 
 export const usePreferences = create<PreferencesState>((set, get) => ({
   ...defaultPreferences,
 
-  setPayFrequency: (freq) => set({ payFrequency: freq }),
-  setNextPayday: (date) => set({ nextPayday: date }),
-  setBudgetPerPeriod: (amount) => set({ budgetPerPeriod: amount }),
-  setChattiness: (level) => set({ chattiness: level }),
-  setNotifications: (prefs) =>
-    set({ notifications: { ...get().notifications, ...prefs } }),
-  setOnboardingComplete: (v) => set({ onboardingComplete: v }),
+  syncUser: async (userInfo) => {
+    const token = useAuth.getState().token;
+    if (!token) return;
+
+    try {
+      const response = await fetch(`${BASE_URL}/api/user/sync`, {
+        method: "POST",
+        ...requestHeader(token),
+        headers: {
+          ...requestHeader(token).headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(userInfo || {}),
+      });
+
+      if (!response.ok) {
+        console.error("Failed to sync user:", response.statusText);
+        return;
+      }
+
+      const data = await response.json();
+      if (data) {
+        if (data.expoPushToken) {
+          set({ expoPushToken: data.expoPushToken });
+        }
+        if (data.preferences) {
+          const prefs = data.preferences;
+          set({
+            payFrequency: prefs.payFrequency ?? get().payFrequency,
+            nextPayday: prefs.nextPayday ?? get().nextPayday,
+            budgetPerPeriod: prefs.budgetPerPeriod ? Number(prefs.budgetPerPeriod) : get().budgetPerPeriod,
+            chattiness: prefs.chattiness ?? get().chattiness,
+            notifications: prefs.notifications
+              ? { ...get().notifications, ...prefs.notifications }
+              : get().notifications,
+            onboardingComplete: prefs.onboardingComplete ?? get().onboardingComplete,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error in syncUser:", error);
+    }
+  },
+
+  setExpoPushToken: async (pushToken: string) => {
+    set({ expoPushToken: pushToken });
+    const token = useAuth.getState().token;
+    if (!token) return;
+
+    try {
+      await fetch(`${BASE_URL}/api/user/push-token`, {
+        method: "PUT",
+        ...requestHeader(token),
+        headers: {
+          ...requestHeader(token).headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pushToken }),
+      });
+    } catch (error) {
+      console.error("Error saving push token to backend:", error);
+    }
+  },
+
+  savePreferences: async (overridePrefs) => {
+    const token = useAuth.getState().token;
+    if (!token) return;
+
+    const current = get();
+    const prefsToSave = {
+      payFrequency: current.payFrequency,
+      nextPayday: current.nextPayday,
+      budgetPerPeriod: current.budgetPerPeriod,
+      chattiness: current.chattiness,
+      notifications: current.notifications,
+      onboardingComplete: current.onboardingComplete,
+      ...overridePrefs,
+    };
+
+    try {
+      await fetch(`${BASE_URL}/api/user/preferences`, {
+        method: "PUT",
+        ...requestHeader(token),
+        headers: {
+          ...requestHeader(token).headers,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(prefsToSave),
+      });
+    } catch (error) {
+      console.error("Error saving preferences to backend:", error);
+    }
+  },
+
+  setPayFrequency: (freq) => {
+    set({ payFrequency: freq });
+    get().savePreferences({ payFrequency: freq });
+  },
+  setNextPayday: (date) => {
+    set({ nextPayday: date });
+    get().savePreferences({ nextPayday: date });
+  },
+  setBudgetPerPeriod: (amount) => {
+    set({ budgetPerPeriod: amount });
+    get().savePreferences({ budgetPerPeriod: amount });
+  },
+  setChattiness: (level) => {
+    set({ chattiness: level });
+    get().savePreferences({ chattiness: level });
+  },
+  setNotifications: (prefs) => {
+    const nextNotifs = { ...get().notifications, ...prefs };
+    set({ notifications: nextNotifs });
+    get().savePreferences({ notifications: nextNotifs });
+  },
+  setOnboardingComplete: (v) => {
+    set({ onboardingComplete: v });
+    get().savePreferences({ onboardingComplete: v });
+  },
   reset: () => set(defaultPreferences),
 }));
 type BudgetState = {
@@ -255,7 +374,7 @@ type BudgetState = {
 
 export const useBudget = create<BudgetState>((set, get) => {
   return {
-    budget: usePreferences().budgetPerPeriod,
+    budget: usePreferences.getState().budgetPerPeriod,
     setBudget: (budget) => set({ budget }),
   };
 });

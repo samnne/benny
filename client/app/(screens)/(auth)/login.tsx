@@ -18,9 +18,9 @@ import { Image } from "moti";
 import { styled } from "nativewind";
 
 import { auth } from "@/config/firebase";
+import { useAuth, usePreferences } from "@/store/zustand";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import bennyHi from "../../../assets/images/benny-hi.png";
-import { useAuth } from "@/store/zustand";
 const SafeAreaView = styled(RNSAV);
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -39,14 +39,18 @@ const Login = () => {
     try {
       const { user } = await signInWithEmailAndPassword(auth, email, password);
       if (user) {
-        setToken(await user.getIdToken());
+        const idToken = await user.getIdToken();
+        setToken(idToken);
+        await usePreferences.getState().syncUser({
+          email: user.email || "",
+          displayName: user.displayName || "",
+        });
         router.replace("/home");
       }
     } catch (error) {
       console.log(error);
     }
   }
-  
 
   return (
     <KeyboardAvoidingView
@@ -146,7 +150,7 @@ const Login = () => {
                 style={signUpLink.animatedStyle}
                 onPressIn={signUpLink.onPressIn}
                 onPressOut={signUpLink.onPressOut}
-                onPress={() => router.push("/onboarding/register")}
+                onPress={() => router.push("/onboarding/welcome")}
               >
                 <Text
                   className="font-nunito-semibold"

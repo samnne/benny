@@ -13,7 +13,7 @@
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>benny.receipt.iosapp</string>
+	<string>com.samuelechefu.benny</string>
 	<key>PROJECT_ID</key>
 	<string>gen-lang-client-0211100695</string>
 	<key>STORAGE_BUCKET</key>

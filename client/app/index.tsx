@@ -1,6 +1,6 @@
 import { auth } from "@/config/firebase";
 import { BASE_URL } from "@/constants/constants";
-import { useAuth } from "@/store/zustand";
+import { useAuth, usePreferences } from "@/store/zustand";
 import { Link, Redirect, useFocusEffect, useRouter } from "expo-router";
 
 import { KeyboardAvoidingView, Text, View } from "react-native";
@@ -15,6 +15,10 @@ export default function Index() {
     const response = await currentUser.getIdToken();
     if (response) {
       setToken(response);
+      usePreferences.getState().syncUser({
+        email: currentUser.email || "",
+        displayName: currentUser.displayName || "",
+      });
     }
   };
   useFocusEffect(() => {

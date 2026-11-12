@@ -1,10 +1,31 @@
-import { Stack } from "expo-router";
-import "../globals.css";
+import { ErrorBoundaryProps, Stack } from "expo-router";
 import "react-native-reanimated";
+import "../globals.css";
 
 import { useFonts } from "expo-font";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { Text } from "moti";
 import { useEffect } from "react";
+import { Pressable, View } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  return (
+    <View className="flex-1 items-center justify-center bg-white px-6">
+      <Text className="mb-3 text-center text-2xl font-bold text-gray-900">
+        Something went wrong
+      </Text>
+      <Text className="mb-6 text-center text-base text-gray-600">
+        {error.message}
+      </Text>
+      <Pressable
+        className="rounded-xl bg-blue-600 px-6 py-3 active:bg-blue-700"
+        onPress={retry}
+      >
+        <Text className="text-base font-semibold text-white">Try Again</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({

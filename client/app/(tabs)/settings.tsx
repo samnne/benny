@@ -89,6 +89,7 @@ const Settings = () => {
 
   const handleSignOut = () => {
     auth.signOut();
+    usePreferences.getState().reset();
     router.replace("/(screens)/onboarding");
   };
 
